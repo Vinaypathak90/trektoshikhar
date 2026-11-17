@@ -108,7 +108,7 @@
 }
 
 /* ========================================================
-   Chillum Phillum Inspired Right-To-Left Sweep & Zoom Animation (Faster Speed)
+   Chillum Phillum Inspired Right-To-Left Sweep & Zoom Animation
    ======================================================== */
 @keyframes luxuryRightToLeftZoom {
   0% {
@@ -141,3 +141,139 @@
 .animate-editorial-fade {
   animation: editorialFadeUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
+
+/* ========================================================
+   High-performance GPU-composited Card Reveal Animation
+   ======================================================== */
+@keyframes smoothCardReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.reveal-card {
+  animation: smoothCardReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+/* ========================================================
+   Silky Tab Switching & Itinerary Reveal Animation
+   ======================================================== */
+@keyframes tabContentSwitch {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-tab-switch {
+  animation: tabContentSwitch 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+@keyframes itineraryDetailsSlide {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-itinerary-details {
+  animation: itineraryDetailsSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+/* ========================================================
+   Seamless Infinite Right-To-Left Marquee
+   ======================================================== */
+@keyframes infiniteMarqueeRTL {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+.animate-infinite-marquee-rtl {
+  display: flex;
+  flex-shrink: 0;
+  animation: infiniteMarqueeRTL 40s linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+/* ========================================================
+   Right-To-Left Smooth Sliding Marquee for Cards
+   ======================================================== */
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-cards-rtl {
+  display: flex;
+  width: max-content;
+  animation: marquee-rtl 36s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.animate-cards-rtl:hover {
+  animation-play-state: paused;
+}
+
+/* ========================================================
+   Glassmorphism Card with Reddish Navbar Shadow Theme
+   ======================================================== */
+.glass-card-red {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(229, 56, 59, 0.14);
+  box-shadow: 
+    0 10px 28px -6px rgba(229, 56, 59, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
+}
+
+.glass-card-red:hover {
+  transform: translateY(-12px) scale(1.018);
+  border-color: rgba(229, 56, 59, 0.85);
+  box-shadow: 
+    0 26px 55px -10px rgba(229, 56, 59, 0.45),
+    0 12px 24px -4px rgba(0, 0, 0, 0.45),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.card-img-zoom {
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.group:hover .card-img-zoom {
+  transform: scale(1.15);
+}
+

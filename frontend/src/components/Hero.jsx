@@ -12,28 +12,28 @@ export default function Hero({ onExploreClick, onAboutClick }) {
   // Ultra-HD Authentic Himalayan Trekking Photos with people/trekkers
   const trekBackdrops = [
     {
-      url: "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=2560&q=95",
+      url: "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1920&q=80",
       title: "Kedarkantha Summit Ridge",
       location: "Uttarakhand (12,500 ft)",
       highlight: "Winter Snow Expedition",
       nextBatch: "22 Nov • 4 slots left"
     },
     {
-      url: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=2560&q=95",
+      url: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1920&q=80",
       title: "Nag Tibba Alpine Crest",
       location: "Dehradun / Pantwari (9,915 ft)",
       highlight: "Best Weekend Trek",
       nextBatch: "Every Friday Departure"
     },
     {
-      url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2560&q=95",
+      url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80",
       title: "Hatu Peak Snow Walk",
       location: "Narkanda / Shimla (11,150 ft)",
       highlight: "360° Himalayan Panorama",
       nextBatch: "Weekend Escapes Open"
     },
     {
-      url: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=2560&q=95",
+      url: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1920&q=80",
       title: "Churdhar Sanctuary Summit",
       location: "Himachal Shivalik (11,965 ft)",
       highlight: "High Altitude Wilderness",
@@ -61,14 +61,18 @@ export default function Hero({ onExploreClick, onAboutClick }) {
         {trekBackdrops.map((slide, idx) => (
           <div
             key={idx}
-            className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
-              idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out transform-gpu ${
+              idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
             <img 
               src={slide.url}
               alt={slide.title}
-              className="w-full h-full object-cover object-center animate-luxury-right-to-left"
+              loading={idx === 0 ? "eager" : "lazy"}
+              decoding="async"
+              className={`w-full h-full object-cover object-center transform-gpu ${
+                idx === currentSlide ? 'animate-luxury-right-to-left' : ''
+              }`}
             />
           </div>
         ))}
@@ -117,11 +121,11 @@ export default function Hero({ onExploreClick, onAboutClick }) {
           <span className="font-semibold text-amber-200"> Dehradun</span>, and the high peaks. Small batches, verified alpine gear, zero compromises on safety.
         </p>
 
-        {/* Primary CTA Buttons */}
+        {/* Primary CTA Buttons with Distinct Hover Color Transformations */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-2 sm:mt-3 w-full sm:w-auto">
           <button
             onClick={onExploreClick}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-xs sm:text-sm tracking-wider font-bold uppercase text-white bg-[#E5383B] hover:bg-[#c1121f] shadow-xl shadow-[#E5383B]/40 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-xs sm:text-sm tracking-wider font-extrabold uppercase text-white bg-[#E5383B] hover:bg-neutral-950 hover:text-[#FFD700] shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer border border-transparent hover:border-[#FFD700]/50"
           >
             <Compass className="w-4 h-4" />
             <span>Explore Upcoming Treks</span>
@@ -130,9 +134,9 @@ export default function Hero({ onExploreClick, onAboutClick }) {
 
           <button
             onClick={onAboutClick}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-sm tracking-wider font-semibold uppercase text-[#0A0A0A] bg-white/95 hover:bg-white shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-sm tracking-wider font-extrabold uppercase text-[#0A0A0A] bg-white hover:bg-[#E5383B] hover:text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer border border-transparent hover:border-white"
           >
-            <ShieldCheck className="w-4 h-4 text-[#E5383B]" />
+            <ShieldCheck className="w-4 h-4 text-[#E5383B] group-hover:text-white" />
             <span>Why Trek With Us</span>
           </button>
         </div>

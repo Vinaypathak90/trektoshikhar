@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -9,26 +10,48 @@ import {
   BookOpen, 
   Users, 
   Home as HomeIcon,
-  Mountain
+  Mountain,
+  Mail
 } from 'lucide-react';
 
 export default function Navbar({ onBookClick }) {
-  const [activeTab, setActiveTab] = useState('home');
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOverRedSection, setIsOverRedSection] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 15);
+  // Derived active tab from current route path
+  const getActiveTab = () => {
+    if (location.pathname.startsWith('/track') || location.pathname.startsWith('/trek')) return 'treks';
+    if (location.pathname.startsWith('/about')) return 'about';
+    if (location.pathname.startsWith('/contact')) return 'contact';
+    return 'home';
+  };
+  const activeTab = getActiveTab();
 
-      // Detect if navbar is overlapping the Red section
-      const redSection = document.getElementById('red-section');
-      if (redSection) {
-        const rect = redSection.getBoundingClientRect();
-        const navbarHeight = 65;
-        const isOver = rect.top <= navbarHeight && rect.bottom >= 10;
-        setIsOverRedSection(isOver);
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 15);
+
+          // Detect if navbar is overlapping the Red section on homepage
+          const redSection = document.getElementById('red-section');
+          if (redSection && location.pathname === '/') {
+            const rect = redSection.getBoundingClientRect();
+            const navbarHeight = 65;
+            const isOver = rect.top <= navbarHeight && rect.bottom >= 10;
+            setIsOverRedSection(isOver);
+          } else {
+            setIsOverRedSection(false);
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -40,22 +63,66 @@ export default function Navbar({ onBookClick }) {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, []);
+  }, [location.pathname]);
 
   const navLinks = [
-    { id: 'home', label: 'Home', href: '#home', icon: HomeIcon },
-    { id: 'about', label: 'About Us', href: '#about-us', icon: Users },
-    { id: 'treks', label: 'Treks', href: '#treks', icon: Mountain },
-    { id: 'gallery', label: 'Gallery', href: '#gallery', icon: Camera },
-    { id: 'blog', label: 'Blog', href: '#blog', icon: BookOpen },
+    { id: 'home', label: 'Home', href: '/', icon: HomeIcon },
+    { id: 'about', label: 'About Us', href: '/about', icon: Users },
+    { id: 'treks', label: 'Treks', href: '/track', icon: Mountain },
+    { id: 'gallery', label: 'Gallery', href: '/#gallery', icon: Camera },
+    { id: 'blog', label: 'Blog', href: '/#blog', icon: BookOpen },
   ];
 
-  const handleNavClick = (id, href) => {
-    setActiveTab(id);
+  const handleNavClick = (id) => {
     setMobileMenuOpen(false);
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+
+    if (id === 'home') {
+      if (location.pathname !== '/') {
+        navigate('/');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (id === 'about') {
+      navigate('/about');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (id === 'treks') {
+      navigate('/track');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (id === 'contact') {
+      navigate('/contact');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (id === 'gallery' || id === 'blog') {
+      if (location.pathname === '/') {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        navigate(`/#${id}`);
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+      return;
+    }
+  };
+
+  const handleBookClick = () => {
+    setMobileMenuOpen(false);
+    if (onBookClick) {
+      onBookClick();
+    } else {
+      navigate('/track');
     }
   };
 
@@ -71,10 +138,10 @@ export default function Navbar({ onBookClick }) {
         
         {/* 1. BRAND LOGO & STYLISH CURSIVE TYPOGRAPHY */}
         <a 
-          href="#home" 
+          href="/" 
           onClick={(e) => {
             e.preventDefault();
-            handleNavClick('home', '#home');
+            handleNavClick('home');
           }}
           className="flex items-center gap-3 group cursor-pointer"
         >
@@ -155,7 +222,7 @@ export default function Navbar({ onBookClick }) {
                 href={link.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleNavClick(link.id, link.href);
+                  handleNavClick(link.id);
                 }}
                 className={linkClass}
               >
@@ -169,7 +236,7 @@ export default function Navbar({ onBookClick }) {
         {/* 3. RIGHT CTAs (DESKTOP) */}
         <div className="hidden sm:flex items-center gap-3">
           <a
-            href="tel:+919876543210"
+            href="tel:+918791218377"
             className={`hidden xl:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
               isOverRedSection 
                 ? 'text-neutral-700 hover:text-black hover:bg-neutral-900/5' 
@@ -177,20 +244,23 @@ export default function Navbar({ onBookClick }) {
             }`}
           >
             <PhoneCall className={`w-3.5 h-3.5 ${isOverRedSection ? 'text-[#E5383B]' : 'text-amber-300'}`} />
-            <span>+91 98765 43210</span>
+            <span>+91 87912 18377</span>
           </a>
 
           <button
             type="button"
-            onClick={onBookClick}
-            className={`group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer overflow-hidden backdrop-blur-sm ${
+            onClick={() => {
+              navigate('/contact');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-sm ${
               isOverRedSection
-                ? 'bg-[#E5383B] text-white hover:bg-[#c1121f] shadow-[#E5383B]/25'
-                : 'bg-white text-[#E5383B] hover:bg-amber-300 hover:text-[#0A0A0A] shadow-black/20'
+                ? 'bg-[#E5383B] text-white hover:bg-neutral-950 hover:text-white shadow-[#E5383B]/25'
+                : 'bg-white text-[#E5383B] hover:bg-neutral-950 hover:text-[#FFD700] shadow-black/20'
             }`}
           >
-            <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-all" />
-            <span>Book a Trek</span>
+            <Mail className="w-4 h-4 group-hover:rotate-12 transition-all" />
+            <span>Contact Us</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
@@ -199,14 +269,17 @@ export default function Navbar({ onBookClick }) {
         <div className="flex md:hidden items-center gap-2">
           <button
             type="button"
-            onClick={onBookClick}
+            onClick={() => {
+              navigate('/contact');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-black shadow-sm ${
               isOverRedSection
                 ? 'bg-[#E5383B] text-white'
                 : 'bg-white text-[#E5383B]'
             }`}
           >
-            Book
+            Contact
           </button>
 
           <button
@@ -242,7 +315,7 @@ export default function Navbar({ onBookClick }) {
                 href={link.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleNavClick(link.id, link.href);
+                  handleNavClick(link.id);
                 }}
                 className={`px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-between transition-all ${
                   isOverRedSection
@@ -265,16 +338,17 @@ export default function Navbar({ onBookClick }) {
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                onBookClick?.();
+                navigate('/contact');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-md ${
+              className={`w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-md cursor-pointer ${
                 isOverRedSection
                   ? 'bg-[#E5383B] text-white'
                   : 'bg-white text-[#E5383B]'
               }`}
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Book Your Mountain Trek</span>
+              <Mail className="w-4 h-4" />
+              <span>Contact Us (+91 87912 18377)</span>
             </button>
           </div>
         </div>

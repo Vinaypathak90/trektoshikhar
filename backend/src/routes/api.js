@@ -160,7 +160,29 @@ router.post('/inquiries', async (req, res) => {
 // POST /api/bookings - Create new trek slot reservation
 router.post('/bookings', async (req, res) => {
   try {
-    const { trek_id, batch_id, user_name, user_email, user_phone, total_trekkers, total_amount, emergency_contact } = req.body;
+    const { 
+      trek_id, 
+      trek_title,
+      batch_id, 
+      batch_date,
+      user_name, 
+      customer_name,
+      user_email, 
+      customer_email,
+      user_phone, 
+      customer_phone,
+      total_trekkers, 
+      trekkers_count,
+      total_amount, 
+      package_name,
+      notes,
+      emergency_contact 
+    } = req.body;
+
+    const name = customer_name || user_name || 'Anonymous Trekker';
+    const phone = customer_phone || user_phone || '';
+    const email = customer_email || user_email || '';
+    const trekkers = trekkers_count || total_trekkers || 1;
 
     const booking_ref = `TKS-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -168,27 +190,41 @@ router.post('/bookings', async (req, res) => {
       .from('bookings')
       .insert([{
         booking_ref,
-        trek_id,
-        batch_id,
-        user_name,
-        user_email,
-        user_phone,
-        total_trekkers: total_trekkers || 1,
-        total_amount,
+        trek_id: trek_id ? String(trek_id) : null,
+        batch_id: batch_id || null,
+        user_name: name,
+        user_email: email,
+        user_phone: phone,
+        total_trekkers: trekkers,
+        total_amount: total_amount || 0,
         payment_status: 'pending',
-        emergency_contact
+        emergency_contact: notes || emergency_contact || ''
       }])
       .select();
 
     if (error) {
-      console.warn('Supabase booking note:', error.message);
+      console.warn('Supabase booking note (ignorable if tables not migrated yet):', error.message);
+    }
+
+    // Optional mail alert to agency
+    try {
+      if (process.env.EMAIL_APP_PASS) {
+        await transporter.sendMail({
+          from: `"TrekToShikhar Booking" <${process.env.EMAIL_APP_NAME}@gmail.com>`,
+          to: `${process.env.EMAIL_APP_NAME}@gmail.com`,
+          subject: `🏔️ New WhatsApp Booking: ${name} (${trek_title || 'Trek'})`,
+          text: `Booking Ref: ${booking_ref}\nTrek: ${trek_title || trek_id}\nPackage: ${package_name || 'Standard'}\nBatch: ${batch_date || 'N/A'}\nName: ${name}\nPhone: ${phone}\nEmail: ${email}\nTrekkers: ${trekkers}\nTotal: ₹${total_amount}\nNotes: ${notes || 'N/A'}`
+        });
+      }
+    } catch (mErr) {
+      console.warn('Mail notification skipped:', mErr.message);
     }
 
     res.status(201).json({
       success: true,
       booking_ref,
       message: 'Slot reserved successfully! Booking confirmation initiated.',
-      data: data?.[0] || { booking_ref, user_name, total_amount }
+      data: data?.[0] || { booking_ref, user_name: name, total_amount }
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
