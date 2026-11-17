@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import HeroFeatures from './components/HeroFeatures';
 import TrekDetailPage from './components/TrekDetailPage';
 import AllTreksPage from './components/AllTreksPage';
 import AboutUsPage from './components/AboutUsPage';
@@ -11,7 +10,9 @@ import BookingModal from './components/BookingModal';
 import TrekCard from './components/TrekCard';
 import GoogleReviewsMarquee from './components/GoogleReviewsMarquee';
 import FloatingContactButtons from './components/FloatingContactButtons';
+import AdminDashboard from './admindashboard/AdminDashboard';
 import { TREKS } from './data/treksData';
+import { getTreks, getCachedTreks } from './lib/trekApi';
 import { 
   Mountain, 
   MapPin, 
@@ -58,10 +59,28 @@ function ScrollToTop() {
 // ----------------------------------------------------------------------
 function HomePage({ onSelectTrek, onBookTrek }) {
   const navigate = useNavigate();
+  const [liveTreks, setLiveTreks] = useState(() => getCachedTreks() || TREKS);
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [visibleCount, setVisibleCount] = useState(3);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef(null);
+
+  // Fetch live treks from Supabase API
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTreksData() {
+      try {
+        const res = await getTreks({ admin: false });
+        if (res && res.treks && res.treks.length > 0 && isMounted) {
+          setLiveTreks(res.treks);
+        }
+      } catch (e) {
+        console.warn('Using local fallback treks on homepage:', e);
+      }
+    }
+    loadTreksData();
+    return () => { isMounted = false; };
+  }, []);
 
   const galleryImages = [
     { title: "Kedarkantha Sunrise Summit", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80" },
@@ -100,8 +119,8 @@ function HomePage({ onSelectTrek, onBookTrek }) {
   ];
 
   const filteredTreks = selectedRegion === 'all' 
-    ? TREKS 
-    : TREKS.filter(t => t.region === selectedRegion);
+    ? liveTreks 
+    : liveTreks.filter(t => t.region === selectedRegion);
 
   // Maximum 9 treks on Homepage loaded progressively in batches of 3
   const maxHomeTreks = Math.min(9, filteredTreks.length);
@@ -298,9 +317,6 @@ function HomePage({ onSelectTrek, onBookTrek }) {
       {/* 3. NEW PREMIUM CONTINUOUS ANIMATED GOOGLE REVIEWS SECTION (Reused directly below Trek Listing) */}
       <GoogleReviewsMarquee />
 
-      {/* 4. HERO FEATURES: SAFETY PILLARS & SEPARATE COUNTER STATS */}
-      <HeroFeatures />
-
       {/* 4. COMPACT MODERN ABOUT TEASER (#about-us on Homepage) */}
       <section id="about-us" className="py-20 px-4 sm:px-6 bg-neutral-50/70 border-y border-neutral-200/80">
         <div className="max-w-7xl mx-auto">
@@ -459,6 +475,9 @@ function HomePage({ onSelectTrek, onBookTrek }) {
 // ----------------------------------------------------------------------
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingTrek, setBookingTrek] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -474,8 +493,8 @@ export default function App() {
       {/* 1. AUTO SCROLL TO TOP ON ROUTE CHANGE */}
       <ScrollToTop />
 
-      {/* 2. PERSISTENT TOP NAVBAR WITH REAL ROUTE INTEGRATION */}
-      <Navbar onBookClick={() => handleOpenBooking(TREKS[0])} />
+      {/* 2. PERSISTENT TOP NAVBAR WITH REAL ROUTE INTEGRATION (HIDDEN IN ADMIN) */}
+      {!isAdmin && <Navbar onBookClick={() => handleOpenBooking(TREKS[0])} />}
 
       {/* 3. MULTI-PAGE REACT ROUTER CONFIGURATION */}
       <Routes>
@@ -598,107 +617,113 @@ export default function App() {
         />
         <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
 
+        {/* Dedicated Admin Dashboard Portal */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
+
         {/* Catch-all Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* 4. PERSISTENT GLOBAL FOOTER */}
-      <footer className="border-t border-neutral-200/80 py-12 px-6 bg-white">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div 
-            onClick={() => {
-              navigate('/');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <img src="/logo.jpg" alt="Logo" className="w-9 h-9 rounded-full border border-neutral-200 group-hover:scale-105 transition-transform" />
-            <div>
-              <span className="font-black text-base text-[#0A0A0A]">
-                TrekTo<span className="text-[#E5383B]">Shikhar</span>
-              </span>
-              <p className="text-xs text-neutral-500">From the foothills to the summit.</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6 text-xs font-semibold text-neutral-600">
-            <button 
+      {/* 4. PERSISTENT GLOBAL FOOTER (HIDDEN IN ADMIN) */}
+      {!isAdmin && (
+        <footer className="border-t border-neutral-200/80 py-12 px-6 bg-white">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div 
               onClick={() => {
                 navigate('/');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-              className="hover:text-black cursor-pointer"
+              }}
+              className="flex items-center gap-3 cursor-pointer group"
             >
-              Home
-            </button>
-            <button 
-              onClick={() => {
-                navigate('/about');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-              className="hover:text-[#E5383B] transition-colors cursor-pointer"
-            >
-              About Us
-            </button>
-            <button 
-              onClick={() => {
-                navigate('/track');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-              className="hover:text-[#E5383B] transition-colors cursor-pointer"
-            >
-              All Treks
-            </button>
-            <button 
-              onClick={() => {
-                navigate('/contact');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-              className="hover:text-[#E5383B] transition-colors cursor-pointer"
-            >
-              Contact Us
-            </button>
-            <button 
-              onClick={() => {
-                navigate('/#gallery');
-                setTimeout(() => {
-                  const el = document.getElementById('gallery');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }} 
-              className="hover:text-black cursor-pointer"
-            >
-              Gallery
-            </button>
-            <button 
-              onClick={() => {
-                navigate('/#blog');
-                setTimeout(() => {
-                  const el = document.getElementById('blog');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }} 
-              className="hover:text-black cursor-pointer"
-            >
-              Blog
-            </button>
-            <a
-              href="tel:+918791218377"
-              className="text-[#E5383B] hover:text-[#C92A2A] font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>+91 87912 18377</span>
-            </a>
+              <img src="/logo.jpg" alt="Logo" className="w-9 h-9 rounded-full border border-neutral-200 group-hover:scale-105 transition-transform" />
+              <div>
+                <span className="font-black text-base text-[#0A0A0A]">
+                  TrekTo<span className="text-[#E5383B]">Shikhar</span>
+                </span>
+                <p className="text-xs text-neutral-500">From the foothills to the summit.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-xs font-semibold text-neutral-600">
+              <button 
+                onClick={() => {
+                  navigate('/');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className="hover:text-black cursor-pointer"
+              >
+                Home
+              </button>
+              <button 
+                onClick={() => {
+                  navigate('/about');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className="hover:text-[#E5383B] transition-colors cursor-pointer"
+              >
+                About Us
+              </button>
+              <button 
+                onClick={() => {
+                  navigate('/track');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className="hover:text-[#E5383B] transition-colors cursor-pointer"
+              >
+                All Treks
+              </button>
+              <button 
+                onClick={() => {
+                  navigate('/contact');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className="hover:text-[#E5383B] transition-colors cursor-pointer"
+              >
+                Contact Us
+              </button>
+              <button 
+                onClick={() => {
+                  navigate('/#gallery');
+                  setTimeout(() => {
+                    const el = document.getElementById('gallery');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }} 
+                className="hover:text-black cursor-pointer"
+              >
+                Gallery
+              </button>
+              <button 
+                onClick={() => {
+                  navigate('/#blog');
+                  setTimeout(() => {
+                    const el = document.getElementById('blog');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }} 
+                className="hover:text-black cursor-pointer"
+              >
+                Blog
+              </button>
+              <a
+                href="tel:+918791218377"
+                className="text-[#E5383B] hover:text-[#C92A2A] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>+91 87912 18377</span>
+              </a>
+            </div>
+
+            <p className="text-xs text-neutral-400">
+              © {new Date().getFullYear()} TrekToShikhar. All rights reserved.
+            </p>
           </div>
+        </footer>
+      )}
 
-          <p className="text-xs text-neutral-400">
-            © {new Date().getFullYear()} TrekToShikhar. All rights reserved.
-          </p>
-        </div>
-      </footer>
-
-      {/* 5. FLOATING PERSISTENT WHATSAPP & PHONE CALL BUTTONS (WHOLE WEBSITE) */}
-      <FloatingContactButtons />
+      {/* 5. FLOATING PERSISTENT WHATSAPP & PHONE CALL BUTTONS (HIDDEN IN ADMIN) */}
+      {!isAdmin && <FloatingContactButtons />}
 
       {/* 6. GLOBAL 1-CLICK WHATSAPP BOOKING MODAL */}
       <BookingModal 

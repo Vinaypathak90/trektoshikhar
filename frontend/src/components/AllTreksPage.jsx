@@ -1,13 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   ArrowLeft, 
   Filter, 
   Compass, 
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
-import { TREKS } from '../data/treksData';
+import { TREKS as FALLBACK_TREKS } from '../data/treksData';
+import { getTreks, getCachedTreks, getCachedTrekMeta } from '../lib/trekApi';
 import TrekCard from './TrekCard';
 import GoogleReviewsMarquee from './GoogleReviewsMarquee';
 
@@ -16,41 +18,78 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
   const handleBack = onBackToHome || (() => navigate('/'));
   const handleSelect = onSelectTrek || ((trek) => navigate(`/track/${trek.slug}`));
 
+  const [treksList, setTreksList] = useState(() => getCachedTreks() || FALLBACK_TREKS);
+  const [dynamicRegions, setDynamicRegions] = useState(() => getCachedTrekMeta()?.availableRegions || [
+    { id: 'all', label: 'All Treks' },
+    { id: 'dehradun', label: 'Dehradun Base' },
+    { id: 'shimla', label: 'Shimla Base' }
+  ]);
+  const [dynamicDifficulties, setDynamicDifficulties] = useState(() => getCachedTrekMeta()?.availableDifficulties || ['Easy', 'Easy - Moderate', 'Moderate']);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [sortBy, setSortBy] = useState('recommended');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch treks from API on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTreks() {
+      setIsLoading(true);
+      try {
+        const res = await getTreks({ admin: false });
+        if (res && res.treks && res.treks.length > 0 && isMounted) {
+          setTreksList(res.treks);
+          if (res.availableRegions && res.availableRegions.length > 0) {
+            setDynamicRegions(res.availableRegions);
+          }
+          if (res.availableDifficulties && res.availableDifficulties.length > 0) {
+            setDynamicDifficulties(res.availableDifficulties);
+          }
+        }
+      } catch (err) {
+        console.warn('Using fallback treks data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadTreks();
+    return () => { isMounted = false; };
+  }, []);
 
   // Filter & Sort Logic
   const filteredTreks = useMemo(() => {
-    return TREKS.filter(trek => {
+    return treksList.filter(trek => {
       // Search Query
       const query = searchQuery.toLowerCase().trim();
+      const trekLoc = trek.location || '';
+      const trekBase = trek.baseCamp || trek.base_camp || '';
+      const trekAlt = trek.altitude || '';
       const matchesSearch = !query || 
         trek.title.toLowerCase().includes(query) ||
-        trek.location.toLowerCase().includes(query) ||
-        trek.baseCamp.toLowerCase().includes(query) ||
-        trek.altitude.toLowerCase().includes(query);
+        trekLoc.toLowerCase().includes(query) ||
+        trekBase.toLowerCase().includes(query) ||
+        trekAlt.toLowerCase().includes(query);
 
       // Region Filter
       const matchesRegion = selectedRegion === 'all' || trek.region === selectedRegion;
 
       // Difficulty Filter
       const matchesDifficulty = selectedDifficulty === 'all' || 
-        trek.difficulty.toLowerCase().includes(selectedDifficulty.toLowerCase());
+        (trek.difficulty && trek.difficulty.toLowerCase().includes(selectedDifficulty.toLowerCase()));
 
       return matchesSearch && matchesRegion && matchesDifficulty;
     }).sort((a, b) => {
-      if (sortBy === 'price-asc') return a.price - b.price;
-      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'price-asc') return (a.price || 0) - (b.price || 0);
+      if (sortBy === 'price-desc') return (b.price || 0) - (a.price || 0);
       if (sortBy === 'altitude-desc') {
-        const altA = parseInt(a.altitude.replace(/\D/g, ''), 10) || 0;
-        const altB = parseInt(b.altitude.replace(/\D/g, ''), 10) || 0;
+        const altA = parseInt(String(a.altitude || '').replace(/\D/g, ''), 10) || 0;
+        const altB = parseInt(String(b.altitude || '').replace(/\D/g, ''), 10) || 0;
         return altB - altA;
       }
-      return 0; // 'recommended' uses default order
+      return (a.displayOrder || a.display_order || 0) - (b.displayOrder || b.display_order || 0);
     });
-  }, [searchQuery, selectedRegion, selectedDifficulty, sortBy]);
+  }, [treksList, searchQuery, selectedRegion, selectedDifficulty, sortBy]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -91,7 +130,7 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
 
           <div className="flex items-center gap-2 self-start md:self-auto">
             <span className="text-xs font-bold text-neutral-600 px-3 py-1.5 rounded-full bg-white border border-neutral-200 shadow-2xs">
-              Showing <strong className="text-[#E5383B]">{filteredTreks.length}</strong> of {TREKS.length} Treks
+              Showing <strong className="text-[#E5383B]">{filteredTreks.length}</strong> of {treksList.length} Treks
             </span>
           </div>
         </div>
@@ -127,19 +166,15 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
               )}
             </div>
 
-            {/* Region Filter Tabs */}
-            <div className="inline-flex p-1 bg-neutral-100 rounded-2xl border border-neutral-200/80 text-xs font-bold shrink-0 shadow-2xs overflow-x-auto scrollbar-none">
-              {[
-                { id: 'all', label: 'All Treks' },
-                { id: 'dehradun', label: 'Dehradun Base' },
-                { id: 'shimla', label: 'Shimla Base' }
-              ].map(tab => (
+            {/* Dynamic Region Filter Tabs */}
+            <div className="inline-flex p-1 bg-neutral-100 rounded-2xl border border-neutral-200/80 text-xs font-bold shrink-0 shadow-2xs overflow-x-auto scrollbar-none touch-pan-x max-w-full">
+              {dynamicRegions.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setSelectedRegion(tab.id)}
-                  className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap text-xs ${
                     selectedRegion === tab.id
-                      ? 'bg-white text-[#E5383B] shadow-xs'
+                      ? 'bg-white text-[#E5383B] shadow-xs font-black'
                       : 'text-neutral-600 hover:text-black'
                   }`}
                 >
@@ -151,30 +186,31 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
           </div>
 
           {/* Bottom Row: Difficulty, Sort, and Reset */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-100 text-xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-neutral-100 text-xs">
             
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Difficulty Dropdown */}
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-neutral-500">Difficulty:</span>
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 w-full sm:w-auto">
+              {/* Dynamic Difficulty Dropdown */}
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                <span className="font-bold text-neutral-500 text-[11px] sm:text-xs">Difficulty:</span>
                 <select
                   value={selectedDifficulty}
                   onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border border-neutral-200 bg-white text-neutral-800 font-semibold focus:outline-none focus:border-[#E5383B] cursor-pointer"
+                  className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-neutral-200 bg-white text-neutral-800 font-semibold focus:outline-none focus:border-[#E5383B] cursor-pointer text-xs"
                 >
                   <option value="all">All Levels</option>
-                  <option value="easy">Easy</option>
-                  <option value="moderate">Moderate</option>
+                  {dynamicDifficulties.map((diff) => (
+                    <option key={diff} value={diff}>{diff}</option>
+                  ))}
                 </select>
               </div>
 
-              {/* Sort By Dropdown */}
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-neutral-500">Sort By:</span>
+              {/* Dynamic Sort By Dropdown */}
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                <span className="font-bold text-neutral-500 text-[11px] sm:text-xs">Sort By:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border border-neutral-200 bg-white text-neutral-800 font-semibold focus:outline-none focus:border-[#E5383B] cursor-pointer"
+                  className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-neutral-200 bg-white text-neutral-800 font-semibold focus:outline-none focus:border-[#E5383B] cursor-pointer text-xs"
                 >
                   <option value="recommended">Featured / Recommended</option>
                   <option value="price-asc">Price: Low to High</option>
@@ -188,7 +224,7 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
             {(searchQuery || selectedRegion !== 'all' || selectedDifficulty !== 'all' || sortBy !== 'recommended') && (
               <button
                 onClick={handleResetFilters}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E5383B] hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E5383B] hover:underline cursor-pointer self-end sm:self-auto"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Filters</span>
@@ -201,11 +237,11 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
       </div>
 
       {/* ====================================================================
-          TREKS GRID (EXACT REFERENCE SCREENSHOT CARD STYLE WITH ZOOM & SHADOW)
+          TREKS GRID: EXACT 3-COLUMN LAYOUT MATCHING HOMEPAGE (SAME SIZE & PROPORTIONS)
          ==================================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {filteredTreks.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
             {filteredTreks.map((trek) => (
               <TrekCard 
                 key={trek.id}
@@ -240,7 +276,6 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
 
       {/* ====================================================================
           NEW PREMIUM CONTINUOUS ANIMATED GOOGLE REVIEWS SECTION
-          (Placed directly below Trek Listing section)
          ==================================================================== */}
       <div className="mt-20">
         <GoogleReviewsMarquee />

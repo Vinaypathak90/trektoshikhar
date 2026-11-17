@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Send, 
@@ -58,6 +59,18 @@ export default function BookingModal({ isOpen, onClose, trek, selectedPackage })
       setFormData(prev => ({ ...prev, batchDate: upcomingBatches[0] }));
     }
   }, [trek]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -140,25 +153,25 @@ Please confirm slot availability and payment details!`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
-  return (
+  return createPortal(
     <div 
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto animate-editorial-fade"
+      className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md"
     >
       {/* 1. SCREEN-LEVEL FIXED CLOSE BUTTON (ALWAYS VISIBLE & NEVER CUT OFF) */}
       <button
         type="button"
         onClick={onClose}
-        className="fixed top-4 right-4 sm:top-6 sm:right-6 z-60 px-4 py-2 rounded-full bg-neutral-900/95 hover:bg-[#E5383B] text-white text-xs font-black shadow-2xl border border-white/25 flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
+        className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[1000000] px-4 py-2 rounded-full bg-neutral-900/95 hover:bg-[#E5383B] text-white text-xs font-black shadow-2xl border border-white/25 flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
         title="Close form (Esc)"
       >
         <X className="w-4 h-4" />
         <span>Close (Esc)</span>
       </button>
 
-      {/* 2. MODAL CARD (FLEX CONTAINER WITH MAX-HEIGHT TO FIT ON ANY SCREEN) */}
+      {/* 2. MODAL CARD (FLEX CONTAINER WITH BOUNDED HEIGHT TO FIT ON ANY SCREEN) */}
       <div 
-        className="relative w-full max-w-xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden text-[#0A0A0A] flex flex-col my-auto"
+        className="relative w-full max-w-xl h-[86vh] max-h-[620px] bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden text-[#0A0A0A] flex flex-col animate-editorial-fade"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Gradient Ribbon Header */}
@@ -242,7 +255,7 @@ Please confirm slot availability and payment details!`;
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+          <form onSubmit={handleSubmit} id="booking-modal-form" className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
             {/* Name & Phone */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
@@ -384,29 +397,33 @@ Please confirm slot availability and payment details!`;
                 Clicking <strong>"Proceed to WhatsApp Booking"</strong> will launch WhatsApp with your pre-filled expedition details to our team (<span className="font-bold">{AGENCY_CONTACT.displayPhone}</span>).
               </p>
             </div>
-
-            {/* Submit and Cancel CTAs */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="py-3.5 px-5 rounded-xl border border-neutral-300 hover:border-neutral-400 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-extrabold text-xs sm:text-sm transition-all cursor-pointer shrink-0"
-              >
-                Cancel / Close
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#20ba5a] hover:to-[#0f7a6d] text-white font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <MessageSquare className="w-5 h-5 fill-white" />
-                <span>{isSubmitting ? 'Preparing WhatsApp...' : 'Proceed to WhatsApp Booking'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
           </form>
         )}
+
+        {/* 3. STICKY MODAL FOOTER (ALWAYS VISIBLE WITHOUT SCROLLING) */}
+        {!submittedSuccess && (
+          <div className="px-4 sm:px-6 py-3 border-t border-neutral-200 bg-white flex items-center justify-between gap-3 shrink-0 shadow-lg">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2.5 px-4 rounded-xl border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-xs transition-all cursor-pointer shrink-0"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="booking-modal-form"
+              disabled={isSubmitting}
+              className="flex-1 py-2.5 px-5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#20ba5a] hover:to-[#0f7a6d] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <MessageSquare className="w-4 h-4 fill-white" />
+              <span>{isSubmitting ? 'Preparing WhatsApp...' : 'Proceed to WhatsApp Booking'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
