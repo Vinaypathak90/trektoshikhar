@@ -6,7 +6,9 @@ import {
   Filter, 
   Compass, 
   RotateCcw,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Phone
 } from 'lucide-react';
 import { TREKS as FALLBACK_TREKS } from '../data/treksData';
 import { getTreks, getCachedTreks, getCachedTrekMeta } from '../lib/trekApi';
@@ -99,7 +101,7 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50/50 pb-24 text-[#0A0A0A] selection:bg-[#E5383B] selection:text-white pt-24 sm:pt-28">
+    <div className="min-h-screen bg-neutral-50/50 text-[#0A0A0A] selection:bg-[#E5383B] selection:text-white pt-24 sm:pt-28">
       
       {/* Top Banner / Breadcrumb Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-8">
@@ -280,6 +282,53 @@ export default function AllTreksPage({ onBackToHome, onSelectTrek, onBookTrek })
       <div className="mt-20">
         <GoogleReviewsMarquee />
       </div>
+
+      {/* ====================================================================
+          FULL-BLEED DARK OBSIDIAN BOTTOM CTA SECTION (MATCHES ALL PAGES)
+         ==================================================================== */}
+      <section className="relative overflow-hidden py-16 sm:py-20 px-4 sm:px-6 bg-neutral-900 text-white border-t border-neutral-800">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-45"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 0%, rgba(229,56,59,0.28) 0%, rgba(255,215,0,0.06) 45%, transparent 72%)'
+          }}
+        />
+        <div className="max-w-5xl mx-auto rounded-3xl p-8 sm:p-12 bg-neutral-950/90 border border-neutral-800 hover:border-[#E5383B]/45 shadow-2xl relative overflow-hidden text-center transition-colors duration-300">
+          <div className="relative z-10 max-w-2xl mx-auto space-y-5">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/5 border border-[#FFD700]/30 text-[11px] font-black uppercase tracking-widest text-[#FFD700]">
+              <Sparkles className="w-3.5 h-3.5 text-[#FFD700]" />
+              <span>Personalized Himalayan Trek Guidance</span>
+            </span>
+
+            <h2 className="font-outfit font-black text-3xl sm:text-4xl text-white tracking-tight leading-tight">
+              Not Sure Which Summit Suits You Best?
+            </h2>
+
+            <p className="text-neutral-300 text-sm sm:text-base leading-relaxed">
+              Tell our certified NIM &amp; ABVIMAS leaders your dates, fitness level, and travel city — we&apos;ll recommend the ideal trail and batch for you.
+            </p>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+              <button
+                onClick={() => onBookTrek && onBookTrek(treksList[0])}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#E5383B] to-[#C92A2A] hover:from-white hover:to-white hover:text-[#0A0A0A] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_12px_30px_rgba(229,56,59,0.45)] hover:scale-105 active:scale-95 transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Plan My Trek on WhatsApp</span>
+              </button>
+
+              <a
+                href="tel:+918791218377"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-white/10 hover:bg-[#FFD700] hover:text-[#0A0A0A] text-white border border-white/15 font-bold text-xs sm:text-sm transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Call +91 87912 18377</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
     </div>
   );

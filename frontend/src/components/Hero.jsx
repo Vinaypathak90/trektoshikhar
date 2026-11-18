@@ -214,40 +214,40 @@ export default function Hero({ onExploreClick, onAboutClick }) {
       </div>
 
       {/* ====================================================================
-          4. BOTTOM BAR: LIVE MOUNTAIN INFO + SLIDE PROGRESS TABS
+          4. BOTTOM BAR: LIVE MOUNTAIN INFO + SLIDE PROGRESS TABS (BLACK BG)
          ==================================================================== */}
-      <div className="relative z-20 max-w-7xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-white/15">
-        
-        {/* Left: Trail Location & Altitude */}
-        <div className="flex items-center gap-2 text-xs font-medium text-white/90 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15">
-          <MapPin className="w-3.5 h-3.5 text-[#E5383B] shrink-0" />
-          <span className="font-bold text-white">{activeSlide.title}</span>
-          <span className="text-white/40">•</span>
-          <span className="text-amber-300">{activeSlide.location}</span>
-        </div>
+      <div className="relative z-20 -mx-4 sm:-mx-8 -mb-6 px-4 sm:px-8 py-3.5 bg-neutral-950/90 backdrop-blur-md border-t border-white/10">
+        <div className="max-w-7xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Left: Trail Location & Altitude */}
+          <div className="flex items-center gap-2 text-xs font-medium text-white/90 bg-neutral-900/90 px-3.5 py-1.5 rounded-xl border border-neutral-800">
+            <MapPin className="w-3.5 h-3.5 text-[#E5383B] shrink-0" />
+            <span className="font-bold text-white">{activeSlide.title}</span>
+            <span className="text-neutral-500">•</span>
+            <span className="text-[#FFD700]">{activeSlide.location}</span>
+          </div>
 
-        {/* Center: Slide Switcher Tabs */}
-        <div className="flex items-center gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                i === currentSlide 
-                  ? 'w-8 bg-amber-400 shadow-md shadow-amber-400/50' 
-                  : 'w-2 bg-white/40 hover:bg-white/70'
-              }`}
-              aria-label={`Slide ${i + 1}`}
-            />
-          ))}
-        </div>
+          {/* Center: Slide Switcher Tabs */}
+          <div className="flex items-center gap-2">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === currentSlide 
+                    ? 'w-8 bg-[#FFD700] shadow-md shadow-amber-400/50' 
+                    : 'w-2 bg-white/35 hover:bg-white/75'
+                }`}
+                aria-label={`Slide ${i + 1}`}
+              />
+            ))}
+          </div>
 
-        {/* Right: Certified Trust Badge */}
-        <div className="hidden sm:flex items-center gap-2 text-xs text-white/80">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>NIM &amp; ABVIMAS Certified Leaders</span>
+          {/* Right: Certified Trust Badge */}
+          <div className="hidden sm:flex items-center gap-2 text-xs text-neutral-200 bg-neutral-900/90 px-3.5 py-1.5 rounded-xl border border-neutral-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>NIM &amp; ABVIMAS Certified Leaders</span>
+          </div>
         </div>
-
       </div>
 
     </section>

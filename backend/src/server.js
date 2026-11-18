@@ -5,6 +5,11 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import heroSlideRoutes from './routes/heroSlideRoutes.js';
 import trekRoutes from './routes/trekRoutes.js';
+import whyChooseRoutes from './routes/whyChooseRoutes.js';
+import reviewsRoutes from './routes/reviewsRoutes.js';
+import aboutUsRoutes from './routes/aboutUsRoutes.js';
+import galleryRoutes from './routes/galleryRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +28,11 @@ app.use(express.urlencoded({ extended: true }));
 // Modular Feature Routes
 app.use('/api/hero-slides', heroSlideRoutes);
 app.use('/api/treks', trekRoutes);
+app.use('/api/why-choose', whyChooseRoutes);
+app.use('/api/reviews', reviewsRoutes);
+app.use('/api/about-us', aboutUsRoutes);
+app.use('/api/gallery', galleryRoutes);
+app.use('/api/blogs', blogRoutes);
 
 // Root route
 app.get('/', (req, res) => {

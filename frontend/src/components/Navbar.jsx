@@ -26,6 +26,8 @@ export default function Navbar({ onBookClick }) {
   const getActiveTab = () => {
     if (location.pathname.startsWith('/track') || location.pathname.startsWith('/trek')) return 'treks';
     if (location.pathname.startsWith('/about')) return 'about';
+    if (location.pathname.startsWith('/gallery')) return 'gallery';
+    if (location.pathname.startsWith('/blog')) return 'blog';
     if (location.pathname.startsWith('/contact')) return 'contact';
     return 'home';
   };
@@ -69,8 +71,8 @@ export default function Navbar({ onBookClick }) {
     { id: 'home', label: 'Home', href: '/', icon: HomeIcon },
     { id: 'about', label: 'About Us', href: '/about', icon: Users },
     { id: 'treks', label: 'Treks', href: '/track', icon: Mountain },
-    { id: 'gallery', label: 'Gallery', href: '/#gallery', icon: Camera },
-    { id: 'blog', label: 'Blog', href: '/#blog', icon: BookOpen },
+    { id: 'gallery', label: 'Gallery', href: '/gallery', icon: Camera },
+    { id: 'blog', label: 'Blog', href: '/blog', icon: BookOpen },
   ];
 
   const handleNavClick = (id) => {
@@ -96,23 +98,21 @@ export default function Navbar({ onBookClick }) {
       return;
     }
 
+    if (id === 'gallery') {
+      navigate('/gallery');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (id === 'contact') {
       navigate('/contact');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    if (id === 'gallery' || id === 'blog') {
-      if (location.pathname === '/') {
-        const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        navigate(`/#${id}`);
-        setTimeout(() => {
-          const el = document.getElementById(id);
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }, 150);
-      }
+    if (id === 'blog') {
+      navigate('/blog');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
   };

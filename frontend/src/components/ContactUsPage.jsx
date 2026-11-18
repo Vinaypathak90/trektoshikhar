@@ -141,7 +141,7 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50/50 pb-24 text-[#0A0A0A] selection:bg-[#E5383B] selection:text-white pt-24 sm:pt-28">
+    <div className="min-h-screen bg-neutral-50/50 text-[#0A0A0A] selection:bg-[#E5383B] selection:text-white pt-24 sm:pt-28">
       
       {/* ====================================================================
           1. TOP BANNER / BREADCRUMB HEADER
@@ -690,43 +690,52 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
       </div>
 
       {/* ====================================================================
-          5. BOTTOM DIRECT REACH BANNER
+          5. BOTTOM DIRECT REACH SECTION (FULL-BLEED DARK OBSIDIAN THEME)
          ==================================================================== */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-neutral-950 via-[#180406] to-neutral-950 border border-[#E5383B]/30 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-left relative z-10">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#FFD700] mb-1.5 block">
-              Still Have Custom Questions?
-            </span>
-            <h3 className="text-2xl sm:text-3xl font-black font-outfit text-white">
-              Talk Directly with Our Lead Guide
-            </h3>
-            <p className="text-neutral-300 text-xs sm:text-sm mt-1">
-              Call or WhatsApp anytime at <strong className="text-white">+91 87912 18377</strong>.
-            </p>
-          </div>
+      <section className="relative overflow-hidden py-16 sm:py-20 px-4 sm:px-6 bg-neutral-900 text-white border-t border-neutral-800">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-45"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 0%, rgba(229,56,59,0.28) 0%, rgba(255,215,0,0.06) 45%, transparent 72%)'
+          }}
+        />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <div className="p-8 sm:p-10 rounded-3xl bg-neutral-950/90 border border-neutral-800 hover:border-[#E5383B]/45 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 transition-colors duration-300">
+            <div className="text-left relative z-10">
+              <span className="text-[11px] font-black uppercase tracking-widest text-[#FFD700] mb-1.5 block">
+                Still Have Custom Questions?
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-black font-outfit text-white">
+                Talk Directly with Our Lead Guide
+              </h3>
+              <p className="text-neutral-300 text-xs sm:text-sm mt-1">
+                Call or WhatsApp anytime at <strong className="text-white">+91 87912 18377</strong>.
+              </p>
+            </div>
 
-          <div className="flex items-center gap-3 relative z-10 shrink-0">
-            <a
-              href={`https://wa.me/${AGENCY_CONTACT.whatsappNumber}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Chat on WhatsApp</span>
-            </a>
-            
-            <a
-              href="tel:+918791218377"
-              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-neutral-100 text-[#0A0A0A] font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2"
-            >
-              <Phone className="w-4 h-4 text-[#E5383B]" />
-              <span>Call Now</span>
-            </a>
+            <div className="flex flex-wrap items-center gap-3 relative z-10 shrink-0">
+              <a
+                href={`https://wa.me/${AGENCY_CONTACT.whatsappNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Chat on WhatsApp</span>
+              </a>
+              
+              <a
+                href="tel:+918791218377"
+                className="px-6 py-3.5 rounded-2xl bg-white hover:bg-[#FFD700] text-[#0A0A0A] font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2"
+              >
+                <Phone className="w-4 h-4 text-[#E5383B]" />
+                <span>Call Now</span>
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
     </div>
   );

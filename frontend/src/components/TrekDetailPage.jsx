@@ -102,7 +102,7 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
   if (!trek) return null;
 
   return (
-    <div className="min-h-screen bg-white text-[#0A0A0A] pb-24 selection:bg-[#E5383B] selection:text-white pt-20 sm:pt-24">
+    <div className="min-h-screen bg-white text-[#0A0A0A] selection:bg-[#E5383B] selection:text-white pt-20 sm:pt-24">
       
       {/* ====================================================================
           1. TOP NAVIGATION / BREADCRUMB BAR (SMOOTH HOVER BUTTONS)
@@ -655,27 +655,64 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
       </div>
 
       {/* ====================================================================
-          5. STICKY BOTTOM FLOATING BAR (MOBILE RESPONSIVE)
+          4.5 FULL-BLEED DARK OBSIDIAN BOTTOM CTA SECTION (MATCHES ALL PAGES)
          ==================================================================== */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 py-2.5 sm:py-3.5 px-4 sm:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
+      <section className="relative overflow-hidden mt-16 pt-16 pb-24 px-4 sm:px-6 bg-neutral-900 text-white border-t border-neutral-800">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-45"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 0%, rgba(229,56,59,0.28) 0%, rgba(255,215,0,0.06) 45%, transparent 72%)'
+          }}
+        />
+        <div className="max-w-5xl mx-auto rounded-3xl p-8 sm:p-11 bg-neutral-950/90 border border-neutral-800 hover:border-[#E5383B]/45 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 transition-colors duration-300">
+          <div className="text-center md:text-left relative z-10 max-w-xl">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#FFD700] mb-1.5 block">
+              Limited Small-Batch Slots (Max 15 Trekkers)
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black font-outfit text-white leading-tight">
+              Ready to Conquer {trek.title}?
+            </h3>
+            <p className="text-neutral-300 text-xs sm:text-sm mt-1.5 leading-relaxed">
+              Reserve your spot directly with our certified expedition leaders — starting at{' '}
+              <strong className="text-[#FFD700]">₹{Number(price).toLocaleString('en-IN')}/person</strong>.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 relative z-10 shrink-0">
+            <button
+              onClick={() => onBookTrek(trek)}
+              className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#E5383B] to-[#C92A2A] hover:from-white hover:to-white hover:text-[#0A0A0A] text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_12px_28px_rgba(229,56,59,0.45)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Book Batch on WhatsApp</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ====================================================================
+          5. STICKY BOTTOM FLOATING BAR (DARK OBSIDIAN THEME - MOBILE RESPONSIVE)
+         ==================================================================== */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-neutral-950/95 backdrop-blur-md border-t border-neutral-800 py-2.5 sm:py-3.5 px-4 sm:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.35)] text-white">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           
           <div className="min-w-0 truncate">
-            <span className="text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wider font-bold block truncate">
+            <span className="text-[10px] sm:text-[11px] text-neutral-400 uppercase tracking-wider font-bold block truncate">
               {trek.title} • {trek.duration}
             </span>
-            <span className="font-outfit font-black text-lg sm:text-xl text-[#E5383B]">
+            <span className="font-outfit font-black text-lg sm:text-xl text-[#FFD700]">
               ₹{Number(price).toLocaleString('en-IN')}
-              <span className="text-[11px] sm:text-xs text-neutral-500 font-normal"> /person</span>
+              <span className="text-[11px] sm:text-xs text-neutral-400 font-normal"> /person</span>
             </span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => onBookTrek(trek)}
-              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-neutral-950 hover:to-neutral-900 text-white hover:text-[#25D366] font-extrabold text-xs sm:text-sm shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-1.5 sm:gap-2 cursor-pointer border border-transparent hover:border-[#25D366]"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-white hover:to-white text-white hover:text-[#0A0A0A] font-extrabold text-xs sm:text-sm shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-1.5 sm:gap-2 cursor-pointer border border-transparent hover:border-[#25D366]"
             >
-              <MessageSquare className="w-4 h-4 fill-white shrink-0" />
+              <MessageSquare className="w-4 h-4 fill-current shrink-0" />
               <span className="hidden sm:inline">Book on WhatsApp</span>
               <span className="sm:hidden">WhatsApp</span>
             </button>

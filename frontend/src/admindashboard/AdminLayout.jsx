@@ -16,10 +16,16 @@ import {
   CheckCircle2,
   Sliders,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Users,
+  Camera,
+  BookOpen
 } from 'lucide-react';
 import HeroSlidesModule from './HeroSlidesModule';
 import TreksModule from './TreksModule';
+import AboutUsModule from './AboutUsModule';
+import GalleryModule from './GalleryModule';
+import BlogsModule from './BlogsModule';
 import ContactModule from './ContactModule';
 
 export default function AdminLayout() {
@@ -28,7 +34,7 @@ export default function AdminLayout() {
   const [activeTab, setActiveTab] = useState('hero');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Navigation Items arranged in proper logical sequence (1 -> 2 -> 3 -> 4)
+  // Navigation Items arranged cleanly (1 -> 2 -> 3 -> 4 -> 5 -> 6)
   const navItems = [
     { 
       id: 'hero', 
@@ -47,16 +53,40 @@ export default function AdminLayout() {
       desc: 'Catalog, Itineraries, Packages'
     },
     { 
+      id: 'about', 
+      label: '3. About Us & Trust Hub', 
+      shortLabel: 'About Us & Trust Hub',
+      icon: Users,
+      badge: 'Module 3',
+      desc: 'Story, Team, Counters & Reviews'
+    },
+    { 
+      id: 'gallery', 
+      label: '4. Expedition Gallery', 
+      shortLabel: 'Expedition Gallery',
+      icon: Camera,
+      badge: 'Module 4',
+      desc: 'Trek Photos, Zoom Stories, Slides'
+    },
+    { 
+      id: 'blogs', 
+      label: '5. Blogs & Field Journals', 
+      shortLabel: 'Blogs & Trail Guides',
+      icon: BookOpen,
+      badge: 'Module 5',
+      desc: 'Articles, Topics, Slides, Sync'
+    },
+    { 
       id: 'contact', 
-      label: '3. Contact Us & FAQs', 
+      label: '6. Contact Us & FAQs', 
       shortLabel: 'Contact Us & FAQs',
       icon: Phone,
-      badge: 'Module 3',
+      badge: 'Module 6',
       desc: 'Hotline, Inbox, FAQs'
     },
     { 
       id: 'overview', 
-      label: '4. System Overview', 
+      label: '7. System Overview', 
       shortLabel: 'System Overview',
       icon: LayoutDashboard,
       badge: 'Live',
@@ -249,6 +279,18 @@ export default function AdminLayout() {
               <TreksModule />
             )}
 
+            {activeTab === 'about' && (
+              <AboutUsModule />
+            )}
+
+            {activeTab === 'gallery' && (
+              <GalleryModule />
+            )}
+
+            {activeTab === 'blogs' && (
+              <BlogsModule />
+            )}
+
             {activeTab === 'contact' && (
               <ContactModule />
             )}
@@ -300,16 +342,28 @@ function OverviewSection({ onNavigateTab }) {
             2. Manage Treks
           </button>
           <button
+            onClick={() => onNavigateTab('about')}
+            className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white hover:text-black text-white text-xs font-bold transition cursor-pointer"
+          >
+            3. About Us &amp; Trust Hub
+          </button>
+          <button
+            onClick={() => onNavigateTab('gallery')}
+            className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white hover:text-black text-white text-xs font-bold transition cursor-pointer"
+          >
+            4. Expedition Gallery
+          </button>
+          <button
             onClick={() => onNavigateTab('contact')}
             className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white hover:text-black text-white text-xs font-bold transition cursor-pointer"
           >
-            3. Contact &amp; FAQs
+            5. Contact &amp; FAQs
           </button>
         </div>
       </div>
 
-      {/* Quick Nav Cards in 1 -> 2 -> 3 Sequence */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {/* Quick Nav Cards in 1 -> 2 -> 3 -> 4 -> 5 Sequence */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
         <div 
           onClick={() => onNavigateTab('hero')}
           className="p-6 rounded-3xl bg-white border border-neutral-200/80 shadow-2xs hover:shadow-lg hover:border-[#E5383B] transition-all cursor-pointer group"
@@ -343,13 +397,61 @@ function OverviewSection({ onNavigateTab }) {
         </div>
 
         <div 
+          onClick={() => onNavigateTab('about')}
+          className="p-6 rounded-3xl bg-white border border-neutral-200/80 shadow-2xs hover:shadow-lg hover:border-[#E5383B] transition-all cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-[#E5383B] flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
+            <Users className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#E5383B]">Module 3</span>
+          <h3 className="font-outfit font-black text-xl text-[#0A0A0A] mt-0.5">
+            About Us &amp; Trust Hub
+          </h3>
+          <p className="text-xs text-neutral-500 mt-1">
+            Unified control for Story, Meet The Team, Why Choose Counters &amp; Google Reviews.
+          </p>
+        </div>
+
+        <div 
+          onClick={() => onNavigateTab('gallery')}
+          className="p-6 rounded-3xl bg-white border border-neutral-200/80 shadow-2xs hover:shadow-lg hover:border-[#E5383B] transition-all cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
+            <Camera className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-sky-600">Module 4</span>
+          <h3 className="font-outfit font-black text-xl text-[#0A0A0A] mt-0.5">
+            Expedition Gallery
+          </h3>
+          <p className="text-xs text-neutral-500 mt-1">
+            Manage trek-wise photos, stories, Hero slides &amp; Homepage featured shots.
+          </p>
+        </div>
+
+        <div 
+          onClick={() => onNavigateTab('blogs')}
+          className="p-6 rounded-3xl bg-white border border-neutral-200/80 shadow-2xs hover:shadow-lg hover:border-[#E5383B] transition-all cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">Module 5</span>
+          <h3 className="font-outfit font-black text-xl text-[#0A0A0A] mt-0.5">
+            Blogs &amp; Field Guides
+          </h3>
+          <p className="text-xs text-neutral-500 mt-1">
+            Publish trail journals, gear guides, winter tips, and hero dispatches.
+          </p>
+        </div>
+
+        <div 
           onClick={() => onNavigateTab('contact')}
           className="p-6 rounded-3xl bg-white border border-neutral-200/80 shadow-2xs hover:shadow-lg hover:border-[#E5383B] transition-all cursor-pointer group"
         >
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
             <Phone className="w-6 h-6" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">Module 3</span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">Module 6</span>
           <h3 className="font-outfit font-black text-xl text-[#0A0A0A] mt-0.5">
             Contact &amp; Inquiries
           </h3>

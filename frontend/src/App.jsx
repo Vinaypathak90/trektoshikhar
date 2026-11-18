@@ -6,13 +6,23 @@ import TrekDetailPage from './components/TrekDetailPage';
 import AllTreksPage from './components/AllTreksPage';
 import AboutUsPage from './components/AboutUsPage';
 import ContactUsPage from './components/ContactUsPage';
+import GalleryPage from './components/GalleryPage';
+import GalleryLightboxModal from './components/GalleryLightboxModal';
+import BlogPage from './components/BlogPage';
+import BlogDetailPage from './components/BlogDetailPage';
 import BookingModal from './components/BookingModal';
+import { openWhatsAppBooking } from './lib/whatsapp';
 import TrekCard from './components/TrekCard';
+import WhyChooseSection from './components/WhyChooseSection';
 import GoogleReviewsMarquee from './components/GoogleReviewsMarquee';
 import FloatingContactButtons from './components/FloatingContactButtons';
 import AdminDashboard from './admindashboard/AdminDashboard';
 import { TREKS } from './data/treksData';
+import { GALLERY_PHOTOS } from './data/galleryData';
+import { BLOG_POSTS } from './data/blogsData';
 import { getTreks, getCachedTreks } from './lib/trekApi';
+import { getCachedGallery, getGalleryData, DEFAULT_GALLERY_SETTINGS } from './lib/galleryApi';
+import { getCachedBlogs, getBlogData } from './lib/blogApi';
 import { 
   Mountain, 
   MapPin, 
@@ -33,7 +43,8 @@ import {
   HeartHandshake,
   MessageSquare,
   Eye,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ZoomIn
 } from 'lucide-react';
 
 // Scroll to top helper on route change
@@ -63,9 +74,21 @@ function HomePage({ onSelectTrek, onBookTrek }) {
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [visibleCount, setVisibleCount] = useState(3);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [homeLightboxIdx, setHomeLightboxIdx] = useState(null);
+  const cachedGallery = getCachedGallery();
+  const [liveGallerySettings, setLiveGallerySettings] = useState(
+    () => cachedGallery?.settings || DEFAULT_GALLERY_SETTINGS
+  );
+  const [liveGalleryPhotos, setLiveGalleryPhotos] = useState(
+    () => cachedGallery?.photos || GALLERY_PHOTOS
+  );
+  const cachedBlogs = getCachedBlogs();
+  const [liveBlogs, setLiveBlogs] = useState(
+    () => cachedBlogs?.posts || BLOG_POSTS
+  );
   const sentinelRef = useRef(null);
 
-  // Fetch live treks from Supabase API
+  // Fetch live treks, gallery & blogs from Backend API
   useEffect(() => {
     let isMounted = true;
     async function loadTreksData() {
@@ -78,45 +101,60 @@ function HomePage({ onSelectTrek, onBookTrek }) {
         console.warn('Using local fallback treks on homepage:', e);
       }
     }
+    async function loadGalleryData() {
+      try {
+        const res = await getGalleryData({ admin: false });
+        if (res && isMounted) {
+          if (res.settings) setLiveGallerySettings(res.settings);
+          if (Array.isArray(res.photos) && res.photos.length > 0) setLiveGalleryPhotos(res.photos);
+        }
+      } catch (e) {
+        console.warn('Using local fallback gallery on homepage:', e);
+      }
+    }
+    async function loadBlogsData() {
+      try {
+        const res = await getBlogData({ admin: false });
+        if (res && res.posts && res.posts.length > 0 && isMounted) {
+          setLiveBlogs(res.posts);
+        }
+      } catch (e) {
+        console.warn('Using local fallback blogs on homepage:', e);
+      }
+    }
     loadTreksData();
-    return () => { isMounted = false; };
+    loadGalleryData();
+    loadBlogsData();
+
+    const handleGalleryUpdate = (e) => {
+      if (isMounted && e?.detail) {
+        if (e.detail.settings) setLiveGallerySettings(e.detail.settings);
+        if (Array.isArray(e.detail.photos)) setLiveGalleryPhotos(e.detail.photos);
+      }
+    };
+    const handleBlogUpdate = (e) => {
+      if (isMounted && e?.detail && Array.isArray(e.detail.posts)) {
+        setLiveBlogs(e.detail.posts);
+      }
+    };
+    window.addEventListener('tts-gallery-updated', handleGalleryUpdate);
+    window.addEventListener('tts-blogs-updated', handleBlogUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('tts-gallery-updated', handleGalleryUpdate);
+      window.removeEventListener('tts-blogs-updated', handleBlogUpdate);
+    };
   }, []);
 
-  const galleryImages = [
-    { title: "Kedarkantha Sunrise Summit", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80" },
-    { title: "Nag Tibba Base Camp Fire", url: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=800&q=80" },
-    { title: "Shimla Snow Ridge Walk", url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" },
-    { title: "Alpine Tent Life", url: "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=800&q=80" },
-    { title: "Churdhar Peak Silhouette", url: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=800&q=80" },
-    { title: "Dehradun Forest Trails", url: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80" },
-  ];
+  // Dynamically synced featured frames from /api/gallery (fallback to first 6 active photos)
+  const activeGalleryList = liveGalleryPhotos.filter((p) => p.is_active !== false && p.isActive !== false);
+  const featuredOnly = activeGalleryList.filter((p) => p.featuredOnHome || p.featured_on_home);
+  const featuredGalleryPhotos = (featuredOnly.length > 0 ? featuredOnly : activeGalleryList).slice(0, 6);
 
-  const blogs = [
-    {
-      id: 1,
-      title: "First Time Trekking in Himalayas? Top 7 Rookie Mistakes to Avoid",
-      readTime: "4 min read",
-      category: "Guide",
-      date: "Nov 2026",
-      snippet: "From packing heavy cotton sweaters to ignoring hydration: here is everything certified guides want you to know before your first mountain trip."
-    },
-    {
-      id: 2,
-      title: "Why Nag Tibba & Hatu Peak are India's Best Weekend Escapes",
-      readTime: "5 min read",
-      category: "Destinations",
-      date: "Oct 2026",
-      snippet: "Quick access from Delhi, Chandigarh, and Dehradun with zero leaves required. Experience real 10,000 ft snowscapes in 48 hours."
-    },
-    {
-      id: 3,
-      title: "Essential Winter Trek Gear Checklist: The 3-Layer System",
-      readTime: "6 min read",
-      category: "Gear",
-      date: "Oct 2026",
-      snippet: "How base layers, fleece insulation, and waterproof windbreakers keep you toasty even at sub-zero summit temperatures."
-    }
-  ];
+  // Synced featured blogs from live Backend API / SWR Cache
+  const activeBlogsList = liveBlogs.filter((b) => b.is_published !== false && b.isPublished !== false);
+  const homeFeaturedBlogs = activeBlogsList.filter((b) => b.featuredOnHome || b.featured_on_home);
+  const homeBlogs = (homeFeaturedBlogs.length > 0 ? homeFeaturedBlogs : activeBlogsList).slice(0, 3);
 
   const filteredTreks = selectedRegion === 'all' 
     ? liveTreks 
@@ -314,7 +352,10 @@ function HomePage({ onSelectTrek, onBookTrek }) {
         )}
       </section>
 
-      {/* 3. NEW PREMIUM CONTINUOUS ANIMATED GOOGLE REVIEWS SECTION (Reused directly below Trek Listing) */}
+      {/* 2.5 GLOBAL REUSABLE "WHY CHOOSE TREKTOSHIKHAR?" ANIMATED COUNTER SECTION */}
+      <WhyChooseSection />
+
+      {/* 3. NEW PREMIUM CONTINUOUS ANIMATED GOOGLE REVIEWS SECTION (Reused directly below Why Choose Section) */}
       <GoogleReviewsMarquee />
 
       {/* 4. COMPACT MODERN ABOUT TEASER (#about-us on Homepage) */}
@@ -388,77 +429,189 @@ function HomePage({ onSelectTrek, onBookTrek }) {
         </div>
       </section>
 
-      {/* 5. PHOTO GALLERY SECTION (#gallery) */}
+      {/* 5. PHOTO GALLERY SECTION (#gallery - REFERENCED DIRECTLY FROM /gallery DATA + LIGHTBOX) */}
       <section id="gallery" className="py-24 px-4 sm:px-6 max-w-7xl mx-auto scroll-mt-20">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E5383B] uppercase tracking-widest mb-2">
-            <Camera className="w-3.5 h-3.5" />
-            <span>Raw Trail Moments</span>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div className="text-left max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E5383B] uppercase tracking-widest mb-2">
+              <Camera className="w-3.5 h-3.5" />
+              <span>{liveGallerySettings.home_gallery_badge || 'Raw Trail Moments'}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0A0A0A] tracking-tight font-outfit">
+              {liveGallerySettings.home_gallery_title || 'Captured On The Trails'}
+            </h2>
+            <p className="text-neutral-500 text-sm mt-1">
+              {liveGallerySettings.home_gallery_subtitle}
+            </p>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-[#0A0A0A] tracking-tight font-outfit">
-            Captured On The Trails
-          </h2>
-          <p className="text-neutral-500 text-sm mt-1">
-            Real photos clicked by our trekkers and expedition leaders in Uttarakhand and Himachal Pradesh.
-          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/gallery');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="group inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-neutral-900 hover:bg-[#E5383B] text-white text-xs font-black uppercase tracking-wider shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer self-start md:self-auto shrink-0 overflow-hidden"
+          >
+            <Camera className="w-4 h-4 text-[#FFD700] shrink-0" />
+            <span className="relative h-4 overflow-hidden flex flex-col justify-start">
+              <span className="leading-4 transition-transform duration-300 group-hover:-translate-y-full">
+                View Full Gallery ({activeGalleryList.length})
+              </span>
+              <span className="leading-4 text-[#FFD700] transition-transform duration-300 group-hover:-translate-y-full">
+                Explore Trek-Wise Album
+              </span>
+            </span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {galleryImages.map((img, i) => (
-            <div 
-              key={i} 
-              className="group relative rounded-2xl overflow-hidden h-60 sm:h-72 shadow-xs hover:shadow-xl transition-all"
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          {featuredGalleryPhotos.map((photo, i) => (
+            <button
+              key={photo.id}
+              type="button"
+              onClick={() => setHomeLightboxIdx(i)}
+              className="group relative rounded-3xl overflow-hidden h-64 sm:h-72 w-full text-left bg-neutral-900 border border-neutral-200/80 shadow-xs hover:shadow-[0_22px_50px_-12px_rgba(229,56,59,0.32)] hover:border-[#E5383B] hover:-translate-y-1.5 transition-all duration-350 cursor-pointer"
             >
-              <img 
-                src={img.url} 
-                alt={img.title} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+              <img
+                src={photo.url}
+                alt={photo.title}
+                loading="lazy"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4 text-white">
-                <p className="text-xs sm:text-sm font-bold">{img.title}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/20" />
+
+              {/* Top Altitude & Trek Pill */}
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                <span className="px-2.5 py-1 rounded-full bg-black/55 backdrop-blur-md border border-white/15 text-[10px] font-extrabold text-white truncate">
+                  {photo.trekName}
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-[#E5383B]/90 text-[10px] font-black text-white shrink-0">
+                  {photo.altitude}
+                </span>
               </div>
-            </div>
+
+              {/* Hover Zoom Badge */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20 backdrop-blur-[2px]">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 text-[#0A0A0A] text-[11px] font-black uppercase tracking-wider shadow-xl">
+                  <ZoomIn className="w-3.5 h-3.5 text-[#E5383B]" />
+                  <span>Zoom &amp; Story</span>
+                </span>
+              </div>
+
+              {/* Bottom Caption */}
+              <div className="absolute bottom-3 left-3 right-3 p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-white group-hover:bg-black/65 transition-all">
+                <p className="font-outfit font-bold text-sm leading-snug line-clamp-1 group-hover:text-[#FFD700] transition-colors">
+                  {photo.title}
+                </p>
+                <p className="text-[11px] text-white/80 mt-0.5 truncate">
+                  {photo.location} • {photo.capturedAt}
+                </p>
+              </div>
+            </button>
           ))}
         </div>
+
+        {/* Shared Interactive Zoomable Lightbox Modal on Homepage */}
+        <GalleryLightboxModal
+          photos={featuredGalleryPhotos}
+          activeIndex={homeLightboxIdx}
+          onClose={() => setHomeLightboxIdx(null)}
+          onChangeIndex={(nextIdx) => setHomeLightboxIdx(nextIdx)}
+        />
       </section>
 
-      {/* 6. BLOG & MOUNTAIN GUIDES SECTION (#blog) */}
-      <section id="blog" className="py-24 px-4 sm:px-6 bg-neutral-50 border-t border-neutral-200 scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
+      {/* 6. BLOG & MOUNTAIN GUIDES SECTION (#blog - DARK OBSIDIAN LAST SECTION) */}
+      <section id="blog" className="relative overflow-hidden py-24 px-4 sm:px-6 bg-neutral-900 text-white border-t border-neutral-800 scroll-mt-20">
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[780px] h-[260px] pointer-events-none opacity-40 blur-3xl"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, rgba(229,56,59,0.22) 0%, rgba(255,215,0,0.06) 50%, transparent 75%)'
+          }}
+        />
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E5383B] uppercase tracking-widest mb-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FFD700] uppercase tracking-widest mb-2">
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Himalayan Knowledge Base</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-[#0A0A0A] tracking-tight font-outfit">
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-outfit">
                 Guides &amp; Trail Journals
               </h2>
+              <p className="text-neutral-400 text-sm mt-1">
+                Authentic field dispatches, packing advice, and high-altitude wisdom by certified guides.
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/blog');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-neutral-800 hover:bg-[#E5383B] text-white text-xs font-black uppercase tracking-wider shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer self-start md:self-auto shrink-0 overflow-hidden border border-neutral-700/80"
+            >
+              <BookOpen className="w-4 h-4 text-[#FFD700] shrink-0" />
+              <span className="relative h-4 overflow-hidden flex flex-col justify-start">
+                <span className="leading-4 transition-transform duration-300 group-hover:-translate-y-full">
+                  Explore All Journals ({BLOG_POSTS.length})
+                </span>
+                <span className="leading-4 text-[#FFD700] transition-transform duration-300 group-hover:-translate-y-full">
+                  Read Field Guides
+                </span>
+              </span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {blogs.map((b) => (
+            {homeBlogs.map((b) => (
               <div
                 key={b.id}
-                className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-xs hover:shadow-xl hover:border-neutral-300 transition-all flex flex-col justify-between"
+                onClick={() => {
+                  navigate(`/blog/${b.slug}`);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="group bg-neutral-800/80 backdrop-blur-sm rounded-3xl overflow-hidden border border-neutral-700/80 hover:border-[#E5383B] shadow-md hover:shadow-[0_20px_44px_-12px_rgba(229,56,59,0.3)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
               >
                 <div>
-                  <div className="flex items-center justify-between text-xs text-neutral-400 mb-3">
-                    <span className="font-bold text-[#E5383B] uppercase">{b.category}</span>
-                    <span>{b.readTime}</span>
+                  {/* Thumbnail Banner */}
+                  <div className="relative h-48 overflow-hidden bg-neutral-900">
+                    <img
+                      src={b.coverImage}
+                      alt={b.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent" />
+                    <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-[#E5383B] text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+                      {b.category}
+                    </span>
+                    <span className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[#FFD700] text-[11px] font-bold">
+                      {b.readTime}
+                    </span>
                   </div>
-                  <h3 className="font-extrabold text-lg text-[#0A0A0A] mb-2 leading-snug hover:text-[#E5383B] transition-colors cursor-pointer">
-                    {b.title}
-                  </h3>
-                  <p className="text-neutral-500 text-xs leading-relaxed mb-4">
-                    {b.snippet}
-                  </p>
+
+                  <div className="p-6">
+                    <h3 className="font-extrabold text-lg text-white mb-2 leading-snug group-hover:text-[#FFD700] transition-colors line-clamp-2">
+                      {b.title}
+                    </h3>
+                    <p className="text-neutral-300 text-xs leading-relaxed line-clamp-2">
+                      {b.excerpt}
+                    </p>
+                  </div>
                 </div>
-                <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-neutral-400">{b.date}</span>
-                  <span className="text-xs font-bold text-[#E5383B] flex items-center gap-1 cursor-pointer">
-                    Read Article <ChevronRight className="w-3 h-3" />
+
+                <div className="px-6 py-4 border-t border-neutral-700/70 bg-neutral-850/50 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-semibold text-neutral-400">
+                    {b.author.name} • {b.publishedAt}
+                  </span>
+                  <span className="text-xs font-extrabold text-[#E5383B] group-hover:text-[#FFD700] group-hover:translate-x-1 transition-all flex items-center gap-1">
+                    <span>Read Article</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </div>
@@ -483,9 +636,8 @@ export default function App() {
   const [selectedPackage, setSelectedPackage] = useState(null);
 
   const handleOpenBooking = (trek = null, pkg = null) => {
-    setBookingTrek(trek || TREKS[0]);
-    setSelectedPackage(pkg);
-    setIsBookingOpen(true);
+    // Direct 1-Click WhatsApp Booking — zero intermediate forms!
+    openWhatsAppBooking({ trek, pkg });
   };
 
   return (
@@ -596,11 +748,64 @@ export default function App() {
                 navigate('/track');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onContactWhatsApp={() => handleOpenBooking(TREKS[0])}
+              onContactWhatsApp={() => handleOpenBooking(null)}
             />
           } 
         />
         <Route path="/about-us" element={<Navigate to="/about" replace />} />
+
+        {/* Dedicated Expedition Gallery Page */}
+        <Route 
+          path="/gallery" 
+          element={
+            <GalleryPage 
+              onBackToHome={() => {
+                navigate('/');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onExploreTreks={() => {
+                navigate('/track');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onContactWhatsApp={() => handleOpenBooking(null)}
+            />
+          } 
+        />
+
+        {/* Dedicated Himalayan Field Journals & Blogs */}
+        <Route 
+          path="/blog" 
+          element={
+            <BlogPage 
+              onBackToHome={() => {
+                navigate('/');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onExploreTreks={() => {
+                navigate('/track');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onContactWhatsApp={() => handleOpenBooking(null)}
+            />
+          } 
+        />
+        <Route path="/blogs" element={<Navigate to="/blog" replace />} />
+        <Route 
+          path="/blog/:slug" 
+          element={
+            <BlogDetailPage 
+              onBookTrek={(trek, pkg) => handleOpenBooking(trek, pkg)} 
+            />
+          } 
+        />
+        <Route 
+          path="/blogs/:slug" 
+          element={
+            <BlogDetailPage 
+              onBookTrek={(trek, pkg) => handleOpenBooking(trek, pkg)} 
+            />
+          } 
+        />
 
         {/* Dedicated Contact Us Page */}
         <Route 
@@ -611,7 +816,7 @@ export default function App() {
                 navigate('/');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onOpenBookingModal={() => handleOpenBooking(TREKS[0])}
+              onOpenBookingModal={() => handleOpenBooking(null)}
             />
           } 
         />
@@ -625,9 +830,9 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* 4. PERSISTENT GLOBAL FOOTER (HIDDEN IN ADMIN) */}
+      {/* 4. PERSISTENT GLOBAL FOOTER (DARK OBSIDIAN THEME ON EVERY PAGE, HIDDEN IN ADMIN) */}
       {!isAdmin && (
-        <footer className="border-t border-neutral-200/80 py-12 px-6 bg-white">
+        <footer className="border-t border-neutral-800 py-12 px-6 bg-neutral-950 text-white">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div 
               onClick={() => {
@@ -636,22 +841,22 @@ export default function App() {
               }}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <img src="/logo.jpg" alt="Logo" className="w-9 h-9 rounded-full border border-neutral-200 group-hover:scale-105 transition-transform" />
+              <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-full border-2 border-[#E5383B]/50 group-hover:border-[#FFD700] group-hover:scale-105 transition-all" />
               <div>
-                <span className="font-black text-base text-[#0A0A0A]">
+                <span className="font-outfit font-black text-base text-white tracking-tight">
                   TrekTo<span className="text-[#E5383B]">Shikhar</span>
                 </span>
-                <p className="text-xs text-neutral-500">From the foothills to the summit.</p>
+                <p className="text-xs text-neutral-400">From the foothills to the summit.</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-6 text-xs font-semibold text-neutral-600">
+            <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6 text-xs font-semibold text-neutral-300">
               <button 
                 onClick={() => {
                   navigate('/');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className="hover:text-black cursor-pointer"
+                className="hover:text-[#FFD700] transition-colors cursor-pointer"
               >
                 Home
               </button>
@@ -660,7 +865,7 @@ export default function App() {
                   navigate('/about');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className="hover:text-[#E5383B] transition-colors cursor-pointer"
+                className="hover:text-[#FFD700] transition-colors cursor-pointer"
               >
                 About Us
               </button>
@@ -669,7 +874,7 @@ export default function App() {
                   navigate('/track');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className="hover:text-[#E5383B] transition-colors cursor-pointer"
+                className="hover:text-[#FFD700] transition-colors cursor-pointer"
               >
                 All Treks
               </button>
@@ -678,44 +883,38 @@ export default function App() {
                   navigate('/contact');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className="hover:text-[#E5383B] transition-colors cursor-pointer"
+                className="hover:text-[#FFD700] transition-colors cursor-pointer"
               >
                 Contact Us
               </button>
               <button 
                 onClick={() => {
-                  navigate('/#gallery');
-                  setTimeout(() => {
-                    const el = document.getElementById('gallery');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
+                  navigate('/gallery');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className="hover:text-black cursor-pointer"
+                className="hover:text-[#FFD700] transition-colors cursor-pointer"
               >
                 Gallery
               </button>
               <button 
                 onClick={() => {
-                  navigate('/#blog');
-                  setTimeout(() => {
-                    const el = document.getElementById('blog');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
+                  navigate('/blog');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className="hover:text-black cursor-pointer"
+                className="hover:text-[#FFD700] transition-colors cursor-pointer"
               >
                 Blog
               </button>
               <a
                 href="tel:+918791218377"
-                className="text-[#E5383B] hover:text-[#C92A2A] font-bold flex items-center gap-1 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[#FFD700] hover:bg-[#E5383B] hover:text-white hover:border-[#E5383B] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>+91 87912 18377</span>
               </a>
             </div>
 
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-neutral-500">
               © {new Date().getFullYear()} TrekToShikhar. All rights reserved.
             </p>
           </div>

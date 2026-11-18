@@ -1,0 +1,60 @@
+{
+  "id": "global",
+  "badge_text": "TRUSTED HIMALAYAN EXPEDITION LEADER",
+  "title": "Why Choose TrekToShikhar?",
+  "subtitle": "Trusted by over 5 Lakh trekkers and recognized by leading adventure bodies.",
+  "is_active": true,
+  "stats": [
+    {
+      "id": "stat-1",
+      "icon": "Users",
+      "target_number": 5000001111,
+      "prefix": "",
+      "suffix": "+",
+      "label": "Happy Trekkers",
+      "sublabel": "Across 60+ destinations",
+      "is_highlighted": true
+    },
+    {
+      "id": "stat-2",
+      "icon": "Mountain",
+      "target_number": 100,
+      "prefix": "",
+      "suffix": "+",
+      "label": "Treks",
+      "sublabel": "Multiple regions",
+      "is_highlighted": false
+    },
+    {
+      "id": "stat-3",
+      "icon": "Trophy",
+      "target_number": 20,
+      "prefix": "",
+      "suffix": "+",
+      "label": "Awards",
+      "sublabel": "Industry recognition",
+      "is_highlighted": false
+    },
+    {
+      "id": "stat-4",
+      "icon": "Clock",
+      "target_number": 16,
+      "prefix": "",
+      "suffix": "+",
+      "label": "Years",
+      "sublabel": "Of safe adventures",
+      "is_highlighted": false
+    },
+    {
+      "id": "stat-5",
+      "icon": "Sprout",
+      "target_number": 1238,
+      "prefix": "",
+      "suffix": "+",
+      "label": "Heal Himalaya",
+      "sublabel": "Cleanup drives conducted successfully",
+      "is_highlighted": false
+    }
+  ],
+  "updated_at": "2026-11-18T17:22:53.775Z"
+}
