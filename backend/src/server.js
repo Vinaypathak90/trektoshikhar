@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes.js';
 import heroSlideRoutes from './routes/heroSlideRoutes.js';
 import trekRoutes from './routes/trekRoutes.js';
 import whyChooseRoutes from './routes/whyChooseRoutes.js';
@@ -20,10 +22,32 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
-app.use(cors());
+// Dynamic CORS with credentials support for httpOnly cookies
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'https://trektoshikhar.com',
+  'https://www.trektoshikhar.com'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed for this origin: ' + origin));
+  },
+  credentials: true
+}));
+
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Admin Authentication Gateway
+app.use('/api/auth', authRoutes);
 
 // Modular Feature Routes
 app.use('/api/hero-slides', heroSlideRoutes);

@@ -28,11 +28,15 @@ import GalleryModule from './GalleryModule';
 import BlogsModule from './BlogsModule';
 import ContactModule from './ContactModule';
 
-export default function AdminLayout() {
+export default function AdminLayout({ admin, onLogout }) {
   const navigate = useNavigate();
   // Default to Module 1: Header & Hero Slider in proper sequence
   const [activeTab, setActiveTab] = useState('hero');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const adminName = admin?.name || 'TrekToShikhar Founder';
+  const adminEmail = admin?.email || 'vinaypathak2772@gmail.com';
+  const adminInitials = adminName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TS';
 
   // Navigation Items arranged cleanly (1 -> 2 -> 3 -> 4 -> 5 -> 6)
   const navItems = [
@@ -197,25 +201,42 @@ export default function AdminLayout() {
           </div>
 
           {/* Sidebar Footer: Back to Live Site & Admin Profile */}
-          <div className="pt-4 border-t border-white/10 space-y-3 shrink-0">
+          <div className="pt-4 border-t border-white/10 space-y-2.5 shrink-0">
             <button
               onClick={() => navigate('/')}
-              className="w-full py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white hover:text-black text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+              className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white hover:text-black text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer border border-white/10"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Exit to Live Website</span>
             </button>
 
-            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5">
-              <div className="w-8 h-8 rounded-full bg-[#E5383B] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm">
-                AD
+            <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E5383B] to-[#990000] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm border border-white/20">
+                  {adminInitials}
+                </div>
+                <div className="text-left text-xs truncate flex-1 min-w-0">
+                  <span className="font-bold text-white block truncate">{adminName}</span>
+                  <span className="text-[10px] text-neutral-400 block truncate">{adminEmail}</span>
+                </div>
               </div>
-              <div className="text-left text-xs truncate">
-                <span className="font-bold text-white block truncate">Mountain Admin</span>
-                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
+
+              <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px]">
+                <span className="text-emerald-400 flex items-center gap-1 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Supabase Live Connected
+                  Whitelisted Founder
                 </span>
+
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    <span>Sign Out</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -260,11 +281,24 @@ export default function AdminLayout() {
               <ExternalLink className="w-3 h-3" />
             </a>
 
-            <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="hidden sm:inline">Hotline:</span>
-              <span>+91 87912 18377</span>
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-100 border border-neutral-200 text-xs">
+              <div className="w-5 h-5 rounded-full bg-[#E5383B] text-white font-bold text-[10px] flex items-center justify-center">
+                {adminInitials}
+              </div>
+              <span className="font-bold text-neutral-800">{adminName.split(' ')[0]}</span>
             </div>
+
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                title="Secure Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            )}
           </div>
         </header>
 
