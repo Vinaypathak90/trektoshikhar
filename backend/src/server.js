@@ -29,13 +29,27 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:3000',
   'https://trektoshikhar.com',
-  'https://www.trektoshikhar.com'
+  'https://www.trektoshikhar.com',
+  'https://frontend-five-navy-44.vercel.app'
 ];
+
+if (process.env.FRONTEND_URL) {
+  const cleanFrontUrl = process.env.FRONTEND_URL.replace(/\/$/, '');
+  if (!allowedOrigins.includes(cleanFrontUrl)) {
+    allowedOrigins.push(cleanFrontUrl);
+  }
+}
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    // Allow any localhost, any vercel.app deployment, or explicitly configured domains
+    if (
+      allowedOrigins.indexOf(origin) !== -1 ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost') ||
+      process.env.NODE_ENV !== 'production'
+    ) {
       return callback(null, true);
     }
     return callback(new Error('CORS not allowed for this origin: ' + origin));
