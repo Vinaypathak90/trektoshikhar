@@ -85,7 +85,8 @@ export function openWhatsAppBooking({ trek = null, pkg = null, customNote = '' }
   // Non-blocking fail-safe lead capture to backend if available
   try {
     if (trek && typeof window !== 'undefined' && window.fetch) {
-      fetch('http://localhost:5000/api/bookings', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://trektoshikhar.onrender.com/api';
+      fetch(`${apiBase}/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

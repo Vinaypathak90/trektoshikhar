@@ -1,7 +1,7 @@
 import { GALLERY_HERO_SLIDES, GALLERY_PHOTOS } from '../data/galleryData';
 import { fetchWithAuth } from './authApi';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://trektoshikhar.onrender.com/api';
 
 const CACHE_KEY_GALLERY = 'tts_cached_gallery_v1';
 

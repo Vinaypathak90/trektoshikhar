@@ -1,7 +1,7 @@
 import { BLOG_HERO_SLIDES, BLOG_POSTS, BLOG_CATEGORIES } from '../data/blogsData';
 import { fetchWithAuth } from './authApi';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://trektoshikhar.onrender.com/api';
 
 const CACHE_KEY_BLOGS = 'tts_cached_blogs_v1';
 
