@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Phone, 
@@ -17,13 +17,81 @@ import {
   Compass, 
   Navigation, 
   Users,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  RefreshCw,
+  Copy,
+  Check
 } from 'lucide-react';
 import { AGENCY_CONTACT, TREKS } from '../data/treksData';
+import { getContactData, submitInquiry } from '../lib/contactApi';
+
+// Helper to generate sanitized WhatsApp URL with prefilled text
+const getCleanWhatsAppUrl = (rawPhone, customMessage) => {
+  const digits = String(rawPhone || '918791218377').replace(/\D/g, '');
+  const cleanPhone = digits.length === 10 ? `91${digits}` : (digits || '918791218377');
+  const msg = customMessage || 'Namaste TrekToShikhar Team! 🏔️ I am reaching out from your Contact Us page and would like to inquire about upcoming Himalayan treks, batch dates, and bookings.';
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+};
 
 export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
   const navigate = useNavigate();
   const handleBack = onBackToHome || (() => navigate('/'));
+  const mapSectionRef = useRef(null);
+
+  // Dynamic Settings & Offices State
+  const [settings, setSettings] = useState({
+    phone: AGENCY_CONTACT.displayPhone || "+91 87912 18377",
+    whatsapp: AGENCY_CONTACT.whatsappNumber || "918791218377",
+    email: AGENCY_CONTACT.email || "bookings@trektoshikhar.com",
+    hours: "7:00 AM – 10:00 PM IST (Mon – Sun)",
+    emergency_line: "24/7 Active Trail Dispatch & Rescue Helpline",
+    response_time: "Within 15 minutes"
+  });
+
+  const [offices, setOffices] = useState([
+    {
+      id: 'office-dehradun-hq',
+      name: 'Dehradun Main HQ & Garhwal Base',
+      city: 'Dehradun',
+      badge: 'Main Headquarters • Uttarakhand',
+      address: 'Rajpur Road, Near Clock Tower, Dehradun, Uttarakhand 248001',
+      landmark: 'Near Clock Tower & Gandhi Park',
+      phone: '+91 87912 18377',
+      email: 'bookings@trektoshikhar.com',
+      hours: '7:00 AM – 9:00 PM IST',
+      map_embed_url: 'https://maps.google.com/maps?q=Rajpur+Road+Dehradun+Clock+Tower&t=&z=14&ie=UTF8&iwloc=&output=embed',
+      is_main_hq: true
+    },
+    {
+      id: 'office-haldwani-foothills',
+      name: 'Haldwani Foothills Hub & Kumaon Gateway',
+      city: 'Haldwani',
+      badge: 'Kumaon Regional Hub • Uttarakhand',
+      address: 'Nainital Road, Near Tikonia Chauraha, Haldwani, Uttarakhand 263139',
+      landmark: 'Near Tikonia Chauraha & Kathgodam Rail Link',
+      phone: '+91 87912 18377',
+      email: 'haldwani@trektoshikhar.com',
+      hours: '8:00 AM – 8:00 PM IST',
+      map_embed_url: 'https://maps.google.com/maps?q=Tikonia+Chauraha+Nainital+Road+Haldwani&t=&z=14&ie=UTF8&iwloc=&output=embed',
+      is_main_hq: false
+    },
+    {
+      id: 'office-shimla-ridge',
+      name: 'Shimla Ridge Base & Himachal Command',
+      city: 'Shimla',
+      badge: 'Himachal Expedition Base',
+      address: 'The Ridge, Near Christ Church, Shimla, Himachal Pradesh 171001',
+      landmark: 'The Ridge, Adjacent to Mall Road',
+      phone: '+91 87912 18377',
+      email: 'shimla@trektoshikhar.com',
+      hours: '7:30 AM – 8:30 PM IST',
+      map_embed_url: 'https://maps.google.com/maps?q=The+Ridge+Christ+Church+Shimla&t=&z=14&ie=UTF8&iwloc=&output=embed',
+      is_main_hq: false
+    }
+  ]);
+
+  const [selectedOfficeId, setSelectedOfficeId] = useState('all');
 
   // Contact Form State
   const [formData, setFormData] = useState({
@@ -37,48 +105,69 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
   });
 
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submittedWaUrl, setSubmittedWaUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeFaq, setActiveFaq] = useState(0);
   const [faqCategory, setFaqCategory] = useState('all');
-  const [selectedMapBase, setSelectedMapBase] = useState('both');
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
-  // Contact form input change
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const handleEmailClick = (e) => {
+    if (e) e.preventDefault();
+    const targetEmail = settings.email || 'bookings@trektoshikhar.com';
+    const subject = 'Expedition Inquiry - TrekToShikhar';
+    const body = 'Hi TrekToShikhar Team,\n\nI would like to inquire about upcoming trek batches and itinerary details.\n\nThank you!';
 
-  // Submit inquiry -> opens WhatsApp with structured details
-  const handleSubmitInquiry = (e) => {
-    e.preventDefault();
-    if (!formData.fullName.trim() || !formData.phone.trim()) {
-      alert("Please provide your full name and WhatsApp phone number.");
-      return;
+    // 1. Copy to clipboard
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(targetEmail);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = targetEmail;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 3000);
+    } catch (err) {
+      console.warn('Clipboard copy error:', err);
     }
 
-    const waMsg = `🏔️ *NEW EXPEDITION INQUIRY - TREKTOSHIKHAR*\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `👤 *Name:* ${formData.fullName}\n` +
-      `📱 *Phone:* ${formData.phone}\n` +
-      `✉️ *Email:* ${formData.email || 'Not provided'}\n` +
-      `🌲 *Trek:* ${formData.trekInterest}\n` +
-      `👥 *Trekkers:* ${formData.trekkerCount}\n` +
-      `📅 *Preferred Date:* ${formData.travelMonth}\n` +
-      `💬 *Message:* ${formData.message || 'I would like to inquire about batch availability and itinerary details.'}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `_Sent from TrekToShikhar Official Contact Portal_`;
+    // 2. Open Gmail Web compose in a new tab (Universal - works on all browsers without desktop mail client)
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(targetEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const win = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
 
-    const waUrl = `https://wa.me/${AGENCY_CONTACT.whatsappNumber}?text=${encodeURIComponent(waMsg)}`;
-    
-    setFormSubmitted(true);
-    
-    // Open WhatsApp in new tab
-    setTimeout(() => {
-      window.open(waUrl, '_blank', 'noopener,noreferrer');
-    }, 400);
+    // 3. Fallback: if popup was blocked or desktop client preferred
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+      window.location.href = `mailto:${targetEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
   };
 
-  // Modern FAQs Dataset
-  const FAQS = [
+  const handleCopyEmailOnly = (e) => {
+    if (e) e.stopPropagation();
+    const targetEmail = settings.email || 'bookings@trektoshikhar.com';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(targetEmail);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = targetEmail;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 3000);
+    } catch (err) {
+      console.warn('Clipboard copy error:', err);
+    }
+  };
+
+  // FAQs State
+  const [faqsList, setFaqsList] = useState([
     {
       id: 1,
       category: 'beginners',
@@ -114,31 +203,109 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
       category: 'transport',
       question: "How does pickup and transport work from Dehradun or Shimla?",
       answer: "For Uttarakhand routes (Nag Tibba, Kedarkantha), shared pickup departs from Dehradun Railway Station at 6:30 AM in comfortable mountain cabs. For Himachal routes (Hatu Peak, Churdhar), pickups are organized from Shimla Old Bus Stand / ISBT."
-    },
-    {
-      id: 7,
-      category: 'booking',
-      question: "What is your rescheduling and cancellation policy?",
-      answer: "Mountain weather and personal plans change. Notify us 7+ days before departure for a 100% trek credit voucher valid for 1 full year with zero transfer fee. Cancellations made 3-6 days in advance receive an 80% voucher."
-    },
-    {
-      id: 8,
-      category: 'safety',
-      question: "Can solo female trekkers join TrekToShikhar batches safely?",
-      answer: "Over 40% of our regular trekkers are solo women. We offer dedicated, secure tent allocations for female travelers, female-friendly hygiene amenities on trail, and a strictly vetted, respectful camp community."
     }
-  ];
+  ]);
+
+  // Load live data from Backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getContactData({ admin: false });
+        if (res && res.success && isMounted) {
+          if (res.settings) setSettings(res.settings);
+          if (Array.isArray(res.offices) && res.offices.length > 0) {
+            setOffices(res.offices);
+          }
+          if (Array.isArray(res.faqs) && res.faqs.length > 0) {
+            setFaqsList(res.faqs);
+          }
+        }
+      } catch (err) {
+        console.warn('Using offline contact defaults:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Selected office for map view
+  const currentOfficeForMap = selectedOfficeId === 'all'
+    ? (offices.find(o => o.is_main_hq) || offices[0])
+    : (offices.find(o => o.id === selectedOfficeId) || offices[0]);
+
+  const mapEmbedUrl = currentOfficeForMap?.map_embed_url || 
+    `https://maps.google.com/maps?q=${encodeURIComponent(currentOfficeForMap?.address || 'Dehradun, Uttarakhand')}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+
+  const handleSelectMapOffice = (officeId) => {
+    setSelectedOfficeId(officeId);
+    if (mapSectionRef.current) {
+      mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Contact form input change
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Submit inquiry: saves to DB AND opens WhatsApp!
+  const handleSubmitInquiry = async (e) => {
+    e.preventDefault();
+    if (!formData.fullName.trim() || !formData.phone.trim()) {
+      alert("Please provide your full name and WhatsApp phone number.");
+      return;
+    }
+
+    // 1. Build rich structured WhatsApp inquiry message
+    const waMsg = `🏔️ *NEW EXPEDITION INQUIRY - TREKTOSHIKHAR*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `👤 *Name:* ${formData.fullName}\n` +
+      `📱 *Phone:* ${formData.phone}\n` +
+      `✉️ *Email:* ${formData.email || 'Not provided'}\n` +
+      `🌲 *Trek:* ${formData.trekInterest}\n` +
+      `👥 *Trekkers:* ${formData.trekkerCount}\n` +
+      `📅 *Preferred Date:* ${formData.travelMonth}\n` +
+      `💬 *Message:* ${formData.message || 'I would like to inquire about batch availability and itinerary details.'}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `_Sent from TrekToShikhar Official Contact Portal_`;
+
+    const waUrl = getCleanWhatsAppUrl(settings.whatsapp || settings.phone, waMsg);
+    setSubmittedWaUrl(waUrl);
+
+    // Open WhatsApp synchronously inside user click event to prevent popup blocker
+    const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
+
+    setIsSubmitting(true);
+
+    // 2. Submit lead to database in background
+    try {
+      await submitInquiry({
+        fullName: formData.fullName,
+        phone: formData.phone,
+        email: formData.email,
+        trekInterest: formData.trekInterest,
+        trekkerCount: formData.trekkerCount,
+        travelMonth: formData.travelMonth,
+        message: formData.message
+      });
+    } catch (err) {
+      console.warn('Could not record inquiry in DB:', err);
+    } finally {
+      setIsSubmitting(false);
+      setFormSubmitted(true);
+    }
+
+    // Fallback if browser blocked the new tab
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+      console.info('WhatsApp popup handled via confirmation screen CTA');
+    }
+  };
 
   const filteredFaqs = faqCategory === 'all' 
-    ? FAQS 
-    : FAQS.filter(f => f.category === faqCategory);
-
-  // Map Embed URLs
-  const MAP_URLS = {
-    dehradun: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d110204.74637207436!2d77.96288349257631!3d30.32556456722883!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390929c356c888af%3A0x4c3562c032518799!2sDehradun%2C%20Uttarakhand!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin",
-    shimla: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d109312.98677464062!2d77.10098906322301!3d31.10481454179313!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390578e3e35d6e67%3A0x1f7e7ff6ff9f54b7!2sShimla%2C%20Himachal%20Pradesh!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin",
-    both: "https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d882583.567823521!2d77.6258905390625!3d30.718890250000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
-  };
+    ? faqsList 
+    : faqsList.filter(f => f.category === faqCategory);
 
   return (
     <div className="min-h-screen bg-neutral-50/50 text-[#0A0A0A] selection:bg-[#E5383B] selection:text-white pt-24 sm:pt-28">
@@ -170,7 +337,7 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
             </h1>
             
             <p className="text-neutral-600 text-sm sm:text-base mt-2 max-w-2xl leading-relaxed">
-              Have questions regarding trail conditions, winter gear requirements, or customized batches? Reach our certified Himalayan leaders directly in <strong>Shimla</strong> and <strong>Dehradun</strong>.
+              Have questions regarding trail conditions, winter gear requirements, or customized batches? Reach our certified Himalayan leaders directly across our mountain bases.
             </p>
           </div>
 
@@ -178,21 +345,20 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
           <div className="flex items-center gap-2 self-start md:self-auto bg-white px-4 py-2.5 rounded-2xl border border-neutral-200 shadow-2xs">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <div className="text-xs">
-              <span className="font-extrabold text-[#0A0A0A] block">Mountain Desk Online</span>
-              <span className="text-neutral-500 text-[11px]">Instant reply via WhatsApp / Call</span>
+              <span className="font-extrabold text-[#0A0A0A] block">Lead Desk Active</span>
+              <span className="text-neutral-500 text-[11px]">{settings.hours || "7:00 AM – 10:00 PM IST"}</span>
             </div>
           </div>
         </div>
-
       </div>
 
       {/* ====================================================================
-          2. 4 PREMIUM CONTACT CARDS (GLASSMORPHISM WITH THEME ACCENTS)
+          2. DYNAMIC CONTACT & PHYSICAL OFFICE CARDS GRID
          ==================================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           
-          {/* CARD 1: DIRECT PHONE & WHATSAPP */}
+          {/* CARD 1: DIRECT LEAD COORDINATOR LINE */}
           <div className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#E5383B] to-[#C92A2A] text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform">
@@ -200,7 +366,7 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
               </div>
               <span className="text-[11px] font-black uppercase tracking-wider text-[#E5383B]">Direct Coordinator Line</span>
               <h3 className="font-outfit font-black text-xl text-[#0A0A0A] mt-1 mb-2">
-                +91 87912 18377
+                {settings.phone || "+91 87912 18377"}
               </h3>
               <p className="text-neutral-500 text-xs leading-relaxed">
                 Call or message directly for immediate slot booking, weather reports, and trail advisories.
@@ -209,97 +375,126 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
             
             <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center gap-2">
               <a
-                href={`tel:+918791218377`}
-                className="flex-1 py-2 px-3 rounded-xl bg-neutral-900 text-white text-xs font-bold text-center hover:bg-[#E5383B] transition-colors"
+                href={`tel:${String(settings.phone || '+918791218377').replace(/[^\d+]/g, '')}`}
+                className="flex-1 py-2 px-3 rounded-xl bg-neutral-900 text-white text-xs font-bold text-center hover:bg-[#E5383B] transition-colors flex items-center justify-center gap-1.5"
               >
-                Call Now
+                <Phone className="w-3.5 h-3.5" />
+                <span>Call Now</span>
               </a>
               <a
-                href={`https://wa.me/${AGENCY_CONTACT.whatsappNumber}`}
+                href={getCleanWhatsAppUrl(
+                  settings.whatsapp || settings.phone,
+                  "Namaste TrekToShikhar Team! 🏔️ I am reaching out from your Contact Us page and would like to inquire about upcoming Himalayan treks, batch dates, and bookings."
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-2 px-3 rounded-xl bg-[#25D366] text-white text-xs font-bold text-center hover:bg-[#20bd5a] transition-colors"
+                className="flex-1 py-2 px-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold text-center transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
-                WhatsApp
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
               </a>
             </div>
           </div>
 
-          {/* CARD 2: SHIMLA BASE HUB */}
-          <div className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-neutral-900 to-neutral-800 text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform">
-                <MapPin className="w-5 h-5 text-amber-400" />
+          {/* DYNAMIC OFFICE CARDS (FROM DATABASE: DEHRADUN HQ, HALDWANI BASE, SHIMLA, ETC.) */}
+          {offices.map((office, idx) => (
+            <div 
+              key={office.id || idx}
+              className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group"
+            >
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-neutral-900 to-neutral-800 text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform">
+                  <MapPin className="w-5 h-5 text-amber-400" />
+                </div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#E5383B]">
+                  {office.badge || `${office.city} Expedition Base`}
+                </span>
+                <h3 className="font-outfit font-black text-lg text-[#0A0A0A] mt-1 mb-2">
+                  {office.name}
+                </h3>
+                <p className="text-neutral-500 text-xs leading-relaxed">
+                  {office.address}
+                </p>
+                {office.landmark && (
+                  <p className="text-neutral-400 text-[11px] mt-1">
+                    Landmark: {office.landmark}
+                  </p>
+                )}
               </div>
-              <span className="text-[11px] font-black uppercase tracking-wider text-amber-600">Himachal Expedition Base</span>
-              <h3 className="font-outfit font-black text-lg text-[#0A0A0A] mt-1 mb-2">
-                Shimla Hub
-              </h3>
-              <p className="text-neutral-500 text-xs leading-relaxed">
-                The Ridge, Near Christ Church, Shimla, HP 171001. Gateway for Hatu Peak, Churdhar &amp; Kinnaur.
-              </p>
+              
+              <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center gap-2">
+                <button
+                  onClick={() => handleSelectMapOffice(office.id)}
+                  className="w-full py-2 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-900 hover:text-white text-neutral-800 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Navigation className="w-3.5 h-3.5 text-[#E5383B]" />
+                  <span>View on Map</span>
+                </button>
+              </div>
             </div>
-            
-            <div className="mt-5 pt-4 border-t border-neutral-100">
-              <button
-                onClick={() => setSelectedMapBase('shimla')}
-                className="w-full py-2 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-900 hover:text-white text-neutral-800 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Navigation className="w-3.5 h-3.5 text-[#E5383B]" />
-                <span>View on Map</span>
-              </button>
-            </div>
-          </div>
+          ))}
 
-          {/* CARD 3: DEHRADUN BASE HUB */}
-          <div className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group">
+          {/* CARD: OFFICIAL EMAIL */}
+          <div className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col justify-between group">
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-neutral-900 to-neutral-800 text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform">
-                <MapPin className="w-5 h-5 text-[#E5383B]" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <Mail className="w-5 h-5" />
+                </div>
+                {copiedEmail && (
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[11px] font-black animate-fade-in flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    <span>Copied!</span>
+                  </span>
+                )}
               </div>
-              <span className="text-[11px] font-black uppercase tracking-wider text-[#E5383B]">Uttarakhand Expedition Base</span>
-              <h3 className="font-outfit font-black text-lg text-[#0A0A0A] mt-1 mb-2">
-                Dehradun Hub
-              </h3>
-              <p className="text-neutral-500 text-xs leading-relaxed">
-                Rajpur Road, Near Clock Tower, Dehradun, UK 248001. Gateway for Nag Tibba, Kedarkantha &amp; Kuari Pass.
-              </p>
-            </div>
-            
-            <div className="mt-5 pt-4 border-t border-neutral-100">
-              <button
-                onClick={() => setSelectedMapBase('dehradun')}
-                className="w-full py-2 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-900 hover:text-white text-neutral-800 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Navigation className="w-3.5 h-3.5 text-[#E5383B]" />
-                <span>View on Map</span>
-              </button>
-            </div>
-          </div>
-
-          {/* CARD 4: OFFICIAL EMAIL */}
-          <div className="bg-white rounded-3xl p-6 border border-neutral-200/90 shadow-sm hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform">
-                <Mail className="w-5 h-5" />
-              </div>
+              
               <span className="text-[11px] font-black uppercase tracking-wider text-blue-600">Official Inquiries</span>
-              <h3 className="font-outfit font-black text-lg text-[#0A0A0A] mt-1 mb-2 truncate">
-                bookings@trektoshikhar.com
-              </h3>
+              <div className="flex items-center gap-1.5 mt-1 mb-2">
+                <h3 
+                  onClick={handleEmailClick}
+                  className="font-outfit font-black text-base sm:text-lg text-[#0A0A0A] truncate cursor-pointer hover:text-blue-600 transition"
+                  title="Click to compose in Gmail"
+                >
+                  {settings.email || "bookings@trektoshikhar.com"}
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleCopyEmailOnly}
+                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition cursor-pointer"
+                  title="Copy email address"
+                >
+                  {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
               <p className="text-neutral-500 text-xs leading-relaxed">
                 For corporate offsites, custom private group batches, and institutional expeditions.
               </p>
             </div>
             
-            <div className="mt-5 pt-4 border-t border-neutral-100">
-              <a
-                href="mailto:bookings@trektoshikhar.com"
-                className="w-full py-2 px-3 rounded-xl bg-neutral-100 hover:bg-blue-600 hover:text-white text-neutral-800 text-xs font-bold text-center transition-colors flex items-center justify-center gap-1.5 block"
+            <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleEmailClick}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 hover:bg-neutral-900 text-white text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
               >
                 <Mail className="w-3.5 h-3.5" />
                 <span>Send Email</span>
-              </a>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyEmailOnly}
+                className={`py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 ${
+                  copiedEmail 
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700' 
+                    : 'border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
+                }`}
+                title="Copy email to clipboard"
+              >
+                {copiedEmail ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedEmail ? 'Copied' : 'Copy'}</span>
+              </button>
             </div>
           </div>
 
@@ -307,9 +502,9 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
       </div>
 
       {/* ====================================================================
-          3. INTERACTIVE SECTION: INQUIRY FORM + DEFAULT GOOGLE MAP EMBED
+          3. INTERACTIVE SECTION: INQUIRY FORM + DYNAMIC GOOGLE MAP EMBED
          ==================================================================== */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-20">
+      <div ref={mapSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* LEFT 6 COLS: MODERN EXPEDITION INQUIRY FORM */}
@@ -333,33 +528,34 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                   <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <h3 className="font-outfit font-black text-xl text-neutral-900">
-                  Inquiry Dispatched to WhatsApp!
+                  Inquiry Dispatched to Operations Desk!
                 </h3>
                 <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
-                  Thank you, <strong>{formData.fullName}</strong>. Your inquiry for <strong>{formData.trekInterest}</strong> has been prepared. If WhatsApp didn't open automatically, click the button below:
+                  Thank you, <strong>{formData.fullName}</strong>. Your inquiry for <strong>{formData.trekInterest}</strong> has been recorded. If WhatsApp didn't open automatically, click the button below:
                 </p>
                 <div className="pt-2">
                   <a
-                    href={`https://wa.me/${AGENCY_CONTACT.whatsappNumber}`}
+                    href={submittedWaUrl || getCleanWhatsAppUrl(settings.whatsapp || settings.phone, 'Namaste TrekToShikhar Team! 🏔️ I submitted an inquiry from your Contact page.')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-extrabold shadow-md transition cursor-pointer"
                   >
+                    <MessageSquare className="w-4 h-4" />
                     <span>Open WhatsApp Chat Directly</span>
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>
                 <button
                   onClick={() => setFormSubmitted(false)}
-                  className="text-xs font-bold text-neutral-500 hover:text-black underline block mx-auto cursor-pointer"
+                  className="text-xs text-neutral-500 hover:text-black underline block mx-auto cursor-pointer"
                 >
-                  Send another inquiry
+                  Submit Another Inquiry
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmitInquiry} className="space-y-4">
                 
-                {/* Row 1: Name & Phone */}
+                {/* Row 1: Full Name & WhatsApp Phone */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutral-700 mb-1.5">
@@ -460,9 +656,9 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                     >
                       <option value="Upcoming Weekend">Upcoming Weekend</option>
                       <option value="Next 15 Days">Within Next 15 Days</option>
-                      <option value="December 2026 (Winter Snow)">December 2026 (Winter Snow)</option>
-                      <option value="January 2027 (Peak Snow)">January 2027 (Peak Snow)</option>
-                      <option value="Spring / Summer 2027">Spring / Summer 2027</option>
+                      <option value="Next Month">Next Month</option>
+                      <option value="Winter Season (Dec–Feb)">Winter Snow Season (Dec–Feb)</option>
+                      <option value="Spring / Summer (Mar–Jun)">Spring / Summer (Mar–Jun)</option>
                     </select>
                   </div>
                 </div>
@@ -477,7 +673,7 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                     name="message"
                     value={formData.message}
                     onChange={handleInputChange}
-                    placeholder="e.g. Inquiring about snow level at Nag Tibba summit, or need private tent accommodation."
+                    placeholder="e.g. Inquiring about snow level at Nag Tibba summit, pickup from Haldwani/Dehradun, or need private tent accommodation."
                     className="w-full px-4 py-3 rounded-2xl border border-neutral-200 text-sm focus:outline-none focus:border-[#E5383B] focus:ring-2 focus:ring-[#E5383B]/15 bg-neutral-50/50 resize-none"
                   />
                 </div>
@@ -485,21 +681,22 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                 {/* Submit CTA */}
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#E5383B] via-[#D90429] to-[#C1121F] hover:from-neutral-900 hover:to-neutral-900 text-white font-black text-sm tracking-wide shadow-[0_8px_25px_rgba(229,56,59,0.4)] hover:shadow-xl hover:scale-[1.01] active:scale-95 transition-all duration-300 cursor-pointer flex items-center justify-center gap-2.5"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Send Inquiry to Mountain Team (+91 87912 18377)</span>
+                  <span>{isSubmitting ? 'Logging Inquiry...' : `Send Inquiry to Mountain Team (${settings.phone || '+91 87912 18377'})`}</span>
                 </button>
 
                 <p className="text-[11px] text-neutral-400 text-center">
-                  ⚡ Pre-fills directly to WhatsApp. Zero spam guaranteed.
+                  ⚡ Pre-fills directly to WhatsApp &amp; recorded on lead desk. Zero spam guaranteed.
                 </p>
 
               </form>
             )}
           </div>
 
-          {/* RIGHT 6 COLS: DEFAULT INTERACTIVE HIMALAYAN MAP EMBED */}
+          {/* RIGHT 6 COLS: DYNAMIC INTERACTIVE HIMALAYAN MAP EMBED */}
           <div className="lg:col-span-6 bg-white rounded-3xl p-6 sm:p-9 border border-neutral-200/90 shadow-sm flex flex-col justify-between">
             
             <div>
@@ -515,40 +712,29 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                   </h3>
                 </div>
 
-                {/* Map Base Selector Tabs */}
-                <div className="inline-flex p-1 bg-neutral-100 rounded-2xl border border-neutral-200 text-xs font-bold shrink-0 self-start sm:self-auto">
-                  <button
-                    onClick={() => setSelectedMapBase('both')}
-                    className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                      selectedMapBase === 'both' ? 'bg-white text-[#E5383B] shadow-2xs' : 'text-neutral-600'
-                    }`}
-                  >
-                    All Hubs
-                  </button>
-                  <button
-                    onClick={() => setSelectedMapBase('dehradun')}
-                    className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                      selectedMapBase === 'dehradun' ? 'bg-white text-[#E5383B] shadow-2xs' : 'text-neutral-600'
-                    }`}
-                  >
-                    Dehradun
-                  </button>
-                  <button
-                    onClick={() => setSelectedMapBase('shimla')}
-                    className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                      selectedMapBase === 'shimla' ? 'bg-white text-[#E5383B] shadow-2xs' : 'text-neutral-600'
-                    }`}
-                  >
-                    Shimla
-                  </button>
+                {/* Dynamic Map Base Selector Tabs */}
+                <div className="inline-flex p-1 bg-neutral-100 rounded-2xl border border-neutral-200 text-xs font-bold shrink-0 self-start sm:self-auto overflow-x-auto max-w-full scrollbar-none">
+                  {offices.map((office) => (
+                    <button
+                      key={office.id}
+                      onClick={() => setSelectedOfficeId(office.id)}
+                      className={`px-3 py-1.5 rounded-xl transition cursor-pointer whitespace-nowrap ${
+                        (selectedOfficeId === office.id || (selectedOfficeId === 'all' && office.is_main_hq)) 
+                          ? 'bg-white text-[#E5383B] shadow-2xs font-black' 
+                          : 'text-neutral-600 hover:text-black'
+                      }`}
+                    >
+                      {office.city}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Default Map Iframe Container */}
+              {/* Dynamic Map Iframe Container */}
               <div className="relative rounded-2xl overflow-hidden border border-neutral-200 shadow-inner h-72 sm:h-84 bg-neutral-100">
                 <iframe
                   title="TrekToShikhar Base Camps Map"
-                  src={MAP_URLS[selectedMapBase]}
+                  src={mapEmbedUrl}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -564,15 +750,15 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                     <MapPin className="w-4 h-4 text-[#E5383B] shrink-0" />
                     <div>
                       <span className="font-bold block">
-                        {selectedMapBase === 'shimla' ? 'Shimla Base Hub (HP)' : selectedMapBase === 'dehradun' ? 'Dehradun Base Hub (UK)' : 'Himalayan Corridor Base Hubs'}
+                        {currentOfficeForMap?.name || 'TrekToShikhar Base Hub'}
                       </span>
                       <span className="text-[11px] text-white/70">
-                        {selectedMapBase === 'shimla' ? 'The Ridge, Christ Church' : selectedMapBase === 'dehradun' ? 'Rajpur Road, Clock Tower' : 'Dual Headquarters across Shimla & Dehradun'}
+                        {currentOfficeForMap?.address || 'Himalayan Mountain Coordination Center'}
                       </span>
                     </div>
                   </div>
                   <a
-                    href="https://maps.google.com"
+                    href={`https://maps.google.com/?q=${encodeURIComponent(currentOfficeForMap?.address || currentOfficeForMap?.name || 'Dehradun')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="shrink-0 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white text-white hover:text-black font-extrabold text-[11px] transition flex items-center gap-1"
@@ -584,16 +770,14 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
               </div>
             </div>
 
-            {/* Bottom Base Camp Highlights */}
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-neutral-100 text-xs">
-              <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80">
-                <span className="font-bold text-[#0A0A0A] block">Dehradun Station Hub</span>
-                <p className="text-neutral-500 text-[11px] mt-0.5">Pickup at 6:30 AM for Nag Tibba &amp; Kedarkantha.</p>
-              </div>
-              <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80">
-                <span className="font-bold text-[#0A0A0A] block">Shimla ISBT Hub</span>
-                <p className="text-neutral-500 text-[11px] mt-0.5">Direct departures for Hatu Peak &amp; Churdhar.</p>
-              </div>
+            {/* Bottom Dynamic Base Camp Highlights from DB */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-neutral-100 text-xs">
+              {offices.slice(0, 2).map((off) => (
+                <div key={off.id} className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80">
+                  <span className="font-bold text-[#0A0A0A] block">{off.name}</span>
+                  <p className="text-neutral-500 text-[11px] mt-0.5">{off.address}</p>
+                </div>
+              ))}
             </div>
 
           </div>
@@ -646,7 +830,7 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
 
         {/* Animated Accordion List */}
         <div className="space-y-3.5">
-          {filteredFaqs.map((faq, index) => {
+          {filteredFaqs.map((faq) => {
             const isOpen = activeFaq === faq.id;
             return (
               <div
@@ -710,13 +894,16 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
                 Talk Directly with Our Lead Guide
               </h3>
               <p className="text-neutral-300 text-xs sm:text-sm mt-1">
-                Call or WhatsApp anytime at <strong className="text-white">+91 87912 18377</strong>.
+                Call or WhatsApp anytime at <strong className="text-white">{settings.phone || '+91 87912 18377'}</strong>.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 relative z-10 shrink-0">
               <a
-                href={`https://wa.me/${AGENCY_CONTACT.whatsappNumber}`}
+                href={getCleanWhatsAppUrl(
+                  settings.whatsapp || settings.phone,
+                  "Namaste TrekToShikhar Team! 🏔️ I would like to speak directly with the Lead Mountain Coordinator regarding upcoming Himalayan treks, custom batches, and weather advisories."
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2"
@@ -726,7 +913,7 @@ export default function ContactUsPage({ onBackToHome, onOpenBookingModal }) {
               </a>
               
               <a
-                href="tel:+918791218377"
+                href={`tel:${String(settings.phone || '+918791218377').replace(/[^\d+]/g, '')}`}
                 className="px-6 py-3.5 rounded-2xl bg-white hover:bg-[#FFD700] text-[#0A0A0A] font-extrabold text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer flex items-center gap-2"
               >
                 <Phone className="w-4 h-4 text-[#E5383B]" />

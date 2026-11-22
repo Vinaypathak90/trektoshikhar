@@ -31,7 +31,7 @@ export function setStoredAdminSession(session) {
 /**
  * Helper to build auth headers (Bearer token + JSON)
  */
-function getHeaders(custom = {}) {
+export function getAuthHeaders(custom = {}) {
   const session = getStoredAdminSession();
   const headers = {
     'Content-Type': 'application/json',
@@ -41,6 +41,18 @@ function getHeaders(custom = {}) {
     headers['Authorization'] = `Bearer ${session.token}`;
   }
   return headers;
+}
+
+/**
+ * Universal authenticated fetch wrapper that attaches httpOnly credentials & Bearer token
+ */
+export async function fetchWithAuth(url, options = {}) {
+  const headers = getAuthHeaders(options.headers || {});
+  return fetch(url, {
+    ...options,
+    headers,
+    credentials: 'include'
+  });
 }
 
 /**

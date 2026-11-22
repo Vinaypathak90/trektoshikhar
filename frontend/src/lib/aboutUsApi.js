@@ -1,3 +1,5 @@
+import { fetchWithAuth } from './authApi';
+
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CACHE_KEY_ABOUT = 'tts_cached_about_us_v1';
@@ -262,9 +264,8 @@ export async function getAboutUs(options = {}) {
 }
 
 export async function updateAboutUsSettings(settingsPayload) {
-  const res = await fetch(`${API_URL}/about-us/settings`, {
+  const res = await fetchWithAuth(`${API_URL}/about-us/settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settingsPayload)
   });
   const json = await res.json();
@@ -276,9 +277,8 @@ export async function updateAboutUsSettings(settingsPayload) {
 }
 
 export async function createTeamMember(memberData) {
-  const res = await fetch(`${API_URL}/about-us/team`, {
+  const res = await fetchWithAuth(`${API_URL}/about-us/team`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(memberData)
   });
   const json = await res.json();
@@ -290,9 +290,8 @@ export async function createTeamMember(memberData) {
 }
 
 export async function updateTeamMember(id, memberData) {
-  const res = await fetch(`${API_URL}/about-us/team/${encodeURIComponent(id)}`, {
+  const res = await fetchWithAuth(`${API_URL}/about-us/team/${encodeURIComponent(id)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(memberData)
   });
   const json = await res.json();
@@ -304,7 +303,7 @@ export async function updateTeamMember(id, memberData) {
 }
 
 export async function deleteTeamMember(id) {
-  const res = await fetch(`${API_URL}/about-us/team/${encodeURIComponent(id)}`, {
+  const res = await fetchWithAuth(`${API_URL}/about-us/team/${encodeURIComponent(id)}`, {
     method: 'DELETE'
   });
   const json = await res.json();
@@ -316,9 +315,8 @@ export async function deleteTeamMember(id) {
 }
 
 export async function reorderTeamMembers(orderedIds) {
-  const res = await fetch(`${API_URL}/about-us/team/reorder`, {
+  const res = await fetchWithAuth(`${API_URL}/about-us/team/reorder`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderedIds })
   });
   const json = await res.json();
@@ -330,7 +328,7 @@ export async function reorderTeamMembers(orderedIds) {
 }
 
 export async function resetAboutUsData() {
-  const res = await fetch(`${API_URL}/about-us/reset`, {
+  const res = await fetchWithAuth(`${API_URL}/about-us/reset`, {
     method: 'POST'
   });
   const json = await res.json();

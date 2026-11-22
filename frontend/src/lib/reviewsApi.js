@@ -1,3 +1,5 @@
+import { fetchWithAuth } from './authApi';
+
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CACHE_KEY_REVIEWS = 'tts_cached_google_reviews_v1';
@@ -195,9 +197,8 @@ export async function getReviewsData(options = {}) {
 }
 
 export async function updateReviewsSettings(settingsPayload) {
-  const res = await fetch(`${API_URL}/reviews/settings`, {
+  const res = await fetchWithAuth(`${API_URL}/reviews/settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settingsPayload)
   });
   const json = await res.json();
@@ -210,9 +211,8 @@ export async function updateReviewsSettings(settingsPayload) {
 }
 
 export async function createReview(reviewData) {
-  const res = await fetch(`${API_URL}/reviews`, {
+  const res = await fetchWithAuth(`${API_URL}/reviews`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reviewData)
   });
   const json = await res.json();
@@ -224,9 +224,8 @@ export async function createReview(reviewData) {
 }
 
 export async function updateReview(id, reviewData) {
-  const res = await fetch(`${API_URL}/reviews/${encodeURIComponent(id)}`, {
+  const res = await fetchWithAuth(`${API_URL}/reviews/${encodeURIComponent(id)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reviewData)
   });
   const json = await res.json();
@@ -238,7 +237,7 @@ export async function updateReview(id, reviewData) {
 }
 
 export async function deleteReview(id) {
-  const res = await fetch(`${API_URL}/reviews/${encodeURIComponent(id)}`, {
+  const res = await fetchWithAuth(`${API_URL}/reviews/${encodeURIComponent(id)}`, {
     method: 'DELETE'
   });
   const json = await res.json();
@@ -250,9 +249,8 @@ export async function deleteReview(id) {
 }
 
 export async function reorderReviews(orderedIds) {
-  const res = await fetch(`${API_URL}/reviews/reorder`, {
+  const res = await fetchWithAuth(`${API_URL}/reviews/reorder`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderedIds })
   });
   const json = await res.json();
@@ -264,7 +262,7 @@ export async function reorderReviews(orderedIds) {
 }
 
 export async function resetReviewsData() {
-  const res = await fetch(`${API_URL}/reviews/reset`, {
+  const res = await fetchWithAuth(`${API_URL}/reviews/reset`, {
     method: 'POST'
   });
   const json = await res.json();

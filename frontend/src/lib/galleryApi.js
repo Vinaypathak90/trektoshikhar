@@ -1,4 +1,5 @@
 import { GALLERY_HERO_SLIDES, GALLERY_PHOTOS } from '../data/galleryData';
+import { fetchWithAuth } from './authApi';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -98,9 +99,8 @@ export async function getGalleryData(options = {}) {
 }
 
 export async function updateGallerySettings(settingsPayload) {
-  const res = await fetch(`${API_URL}/gallery/settings`, {
+  const res = await fetchWithAuth(`${API_URL}/gallery/settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settingsPayload)
   });
   const json = await res.json();
@@ -112,9 +112,8 @@ export async function updateGallerySettings(settingsPayload) {
 }
 
 export async function createGalleryPhoto(photoData) {
-  const res = await fetch(`${API_URL}/gallery/photos`, {
+  const res = await fetchWithAuth(`${API_URL}/gallery/photos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(photoData)
   });
   const json = await res.json();
@@ -126,9 +125,8 @@ export async function createGalleryPhoto(photoData) {
 }
 
 export async function updateGalleryPhoto(id, photoData) {
-  const res = await fetch(`${API_URL}/gallery/photos/${encodeURIComponent(id)}`, {
+  const res = await fetchWithAuth(`${API_URL}/gallery/photos/${encodeURIComponent(id)}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(photoData)
   });
   const json = await res.json();
@@ -140,7 +138,7 @@ export async function updateGalleryPhoto(id, photoData) {
 }
 
 export async function deleteGalleryPhoto(id) {
-  const res = await fetch(`${API_URL}/gallery/photos/${encodeURIComponent(id)}`, {
+  const res = await fetchWithAuth(`${API_URL}/gallery/photos/${encodeURIComponent(id)}`, {
     method: 'DELETE'
   });
   const json = await res.json();
@@ -152,9 +150,8 @@ export async function deleteGalleryPhoto(id) {
 }
 
 export async function reorderGalleryPhotos(orderedIds) {
-  const res = await fetch(`${API_URL}/gallery/photos/reorder`, {
+  const res = await fetchWithAuth(`${API_URL}/gallery/photos/reorder`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderedIds })
   });
   const json = await res.json();
@@ -166,7 +163,7 @@ export async function reorderGalleryPhotos(orderedIds) {
 }
 
 export async function resetGalleryData() {
-  const res = await fetch(`${API_URL}/gallery/reset`, {
+  const res = await fetchWithAuth(`${API_URL}/gallery/reset`, {
     method: 'POST'
   });
   const json = await res.json();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Plus, 
@@ -31,6 +31,13 @@ import {
 import { TREKS as FALLBACK_TREKS } from '../data/treksData';
 import { getTreks, createTrek, updateTrek, deleteTrek } from '../lib/trekApi';
 
+const DEFAULT_BASE_REGIONS = [
+  { id: 'dehradun', label: 'Dehradun Base (Uttarakhand)', shortLabel: 'Dehradun Base' },
+  { id: 'shimla', label: 'Shimla Base (Himachal)', shortLabel: 'Shimla Base' }
+];
+
+const STORAGE_CUSTOM_REGIONS_KEY = 'tts_custom_regions_v1';
+
 export default function TreksModule() {
   const [treksList, setTreksList] = useState(FALLBACK_TREKS);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,9 +50,133 @@ export default function TreksModule() {
   const [toastMessage, setToastMessage] = useState('');
   const [newHeroImgUrl, setNewHeroImgUrl] = useState('');
 
+  // Dynamic Custom Regions State (persisted in localStorage + aggregated with db treks)
+  const [customRegions, setCustomRegions] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_CUSTOM_REGIONS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [isAddingNewRegion, setIsAddingNewRegion] = useState(false);
+  const [newRegionInput, setNewRegionInput] = useState('');
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 3500);
+  };
+
+  // Combined list of built-in + custom-added + database distinct regions
+  const allAvailableRegions = useMemo(() => {
+    const map = new Map();
+    // 1. Built-in defaults
+    DEFAULT_BASE_REGIONS.forEach(r => map.set(r.id.toLowerCase(), r));
+
+    // 2. Saved custom regions from localStorage
+    (customRegions || []).forEach(r => {
+      if (r && r.id) {
+        const idLower = r.id.toLowerCase().trim();
+        map.set(idLower, {
+          id: idLower,
+          label: r.label || `${idLower.charAt(0).toUpperCase() + idLower.slice(1)} Base`,
+          shortLabel: r.shortLabel || r.label || `${idLower.charAt(0).toUpperCase() + idLower.slice(1)} Base`,
+          isCustom: true
+        });
+      }
+    });
+
+    // 3. Any distinct regions present in treksList
+    (treksList || []).forEach(t => {
+      if (t.region) {
+        const regId = t.region.toLowerCase().trim();
+        if (!map.has(regId)) {
+          const pretty = regId.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const displayLabel = pretty.toLowerCase().includes('base') ? pretty : `${pretty} Base`;
+          map.set(regId, {
+            id: regId,
+            label: displayLabel,
+            shortLabel: displayLabel
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [customRegions, treksList]);
+
+  // Helper to add a new custom region
+  const handleAddCustomRegion = (customInput) => {
+    const trimmed = (customInput || '').trim();
+    if (!trimmed) return null;
+
+    // Generate safe clean slug ID
+    let generatedId = trimmed
+      .toLowerCase()
+      .replace(/\(.*?\)/g, '')
+      .replace(/base/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    if (!generatedId) {
+      generatedId = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    }
+
+    // Nicely formatted labels
+    let label = trimmed;
+    if (!label.toLowerCase().includes('base')) {
+      label = `${trimmed} Base`;
+    }
+    const shortLabel = label.replace(/\(.*?\)/g, '').trim() || label;
+
+    const newRegionObj = {
+      id: generatedId,
+      label,
+      shortLabel,
+      isCustom: true
+    };
+
+    const updated = [...(customRegions || []).filter(r => r.id !== generatedId), newRegionObj];
+    setCustomRegions(updated);
+    try {
+      localStorage.setItem(STORAGE_CUSTOM_REGIONS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Could not save custom region:', e);
+    }
+
+    // Set form region and close input
+    setFormData(prev => ({ ...prev, region: generatedId }));
+    setIsAddingNewRegion(false);
+    setNewRegionInput('');
+    showToast(`Region "${label}" added to dropdown & selected!`);
+    return generatedId;
+  };
+
+  // Helper to remove custom region
+  const handleRemoveCustomRegion = (regionId, e) => {
+    if (e) e.stopPropagation();
+    const updated = (customRegions || []).filter(r => r.id !== regionId);
+    setCustomRegions(updated);
+    try {
+      localStorage.setItem(STORAGE_CUSTOM_REGIONS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn('Could not update custom regions:', err);
+    }
+    if (formData.region === regionId) {
+      setFormData(prev => ({ ...prev, region: 'dehradun' }));
+    }
+    showToast('Custom region removed from dropdown');
+  };
+
+  const formatRegionBadge = (reg) => {
+    if (!reg) return 'DEHRADUN BASE';
+    const found = allAvailableRegions.find(r => r.id.toLowerCase() === reg.toLowerCase());
+    if (found) {
+      const raw = (found.shortLabel || found.label).toUpperCase();
+      return raw.includes('BASE') ? raw : `${raw} BASE`;
+    }
+    const clean = reg.replace(/[-_]/g, ' ').toUpperCase();
+    return clean.includes('BASE') ? clean : `${clean} BASE`;
   };
 
   // Fetch treks from API
@@ -87,7 +218,7 @@ export default function TreksModule() {
     const baseMatch = (t.baseCamp || t.base_camp) && (t.baseCamp || t.base_camp).toLowerCase().includes(query);
     const altMatch = t.altitude && t.altitude.toLowerCase().includes(query);
     const matchesSearch = !query || titleMatch || locMatch || baseMatch || altMatch;
-    const matchesRegion = selectedRegion === 'all' || t.region === selectedRegion;
+    const matchesRegion = selectedRegion === 'all' || (t.region && t.region.toLowerCase() === selectedRegion.toLowerCase());
     return matchesSearch && matchesRegion;
   });
 
@@ -190,6 +321,8 @@ export default function TreksModule() {
 
   const handleOpenAdd = () => {
     setEditingTrek(null);
+    setIsAddingNewRegion(false);
+    setNewRegionInput('');
     setFormData({
       ...initialForm,
       slug: `trek-${Date.now().toString(36)}`
@@ -200,6 +333,8 @@ export default function TreksModule() {
 
   const handleOpenEdit = (trek) => {
     setEditingTrek(trek);
+    setIsAddingNewRegion(false);
+    setNewRegionInput('');
     setFormData({
       title: trek.title || '',
       slug: trek.slug || '',
@@ -478,14 +613,19 @@ export default function TreksModule() {
         <div className="inline-flex p-1 bg-neutral-100 rounded-xl border border-neutral-200 text-xs font-bold shrink-0 self-start sm:self-auto overflow-x-auto max-w-full scrollbar-none">
           {[
             { id: 'all', label: `All (${treksList.length})` },
-            { id: 'dehradun', label: 'Dehradun Base' },
-            { id: 'shimla', label: 'Shimla Base' }
+            ...allAvailableRegions.map(reg => {
+              const count = treksList.filter(t => (t.region || '').toLowerCase() === reg.id.toLowerCase()).length;
+              return {
+                id: reg.id,
+                label: `${reg.shortLabel || reg.label}${count > 0 ? ` (${count})` : ''}`
+              };
+            })
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setSelectedRegion(tab.id)}
               className={`px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap ${
-                selectedRegion === tab.id ? 'bg-white text-[#E5383B] shadow-2xs' : 'text-neutral-600 hover:text-black'
+                selectedRegion === tab.id ? 'bg-white text-[#E5383B] shadow-2xs font-black' : 'text-neutral-600 hover:text-black'
               }`}
             >
               {tab.label}
@@ -514,7 +654,7 @@ export default function TreksModule() {
                     className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500" 
                   />
                   <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">
-                    {(trek.region || 'DEHRADUN').toUpperCase()} BASE
+                    {formatRegionBadge(trek.region)}
                   </div>
                   <div className="absolute bottom-3 right-3 bg-gradient-to-r from-[#E5383B] to-[#C92A2A] text-white text-xs font-black px-3 py-1 rounded-xl shadow-md">
                     ₹{Number(price).toLocaleString('en-IN')}
@@ -678,15 +818,145 @@ export default function TreksModule() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-neutral-700 mb-1">Base Region *</label>
-                      <select
-                        value={formData.region}
-                        onChange={(e) => setFormData(p => ({ ...p, region: e.target.value }))}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-xs sm:text-sm focus:border-[#E5383B] focus:outline-none bg-white font-semibold cursor-pointer"
-                      >
-                        <option value="dehradun">Dehradun Base (Uttarakhand)</option>
-                        <option value="shimla">Shimla Base (Himachal)</option>
-                      </select>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-neutral-700">Base Region *</label>
+                        {!isAddingNewRegion ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingNewRegion(true);
+                              setNewRegionInput('');
+                            }}
+                            className="text-[11px] font-bold text-[#E5383B] hover:text-[#C92A2A] hover:underline cursor-pointer inline-flex items-center gap-1"
+                            title="Type and add a new custom region"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Type New Region</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingNewRegion(false);
+                              setNewRegionInput('');
+                            }}
+                            className="text-[11px] font-bold text-neutral-500 hover:text-neutral-800 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+
+                      {!isAddingNewRegion ? (
+                        <div className="relative">
+                          <select
+                            value={formData.region}
+                            onChange={(e) => {
+                              if (e.target.value === '__ADD_NEW__') {
+                                setIsAddingNewRegion(true);
+                                setNewRegionInput('');
+                              } else {
+                                setFormData(p => ({ ...p, region: e.target.value }));
+                              }
+                            }}
+                            className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-neutral-200 text-xs sm:text-sm focus:border-[#E5383B] focus:ring-1 focus:ring-[#E5383B] focus:outline-none bg-white font-semibold cursor-pointer appearance-none"
+                          >
+                            {allAvailableRegions.map(reg => (
+                              <option key={reg.id} value={reg.id}>
+                                {reg.label}
+                              </option>
+                            ))}
+                            <option disabled value="">──────────────</option>
+                            <option value="__ADD_NEW__" className="font-bold text-[#E5383B]">
+                              ➕ + Add New Custom Region...
+                            </option>
+                          </select>
+                          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                            <ChevronRight className="w-4 h-4 rotate-90" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 p-2 rounded-xl bg-neutral-50 border border-[#E5383B]/40 animate-fadeIn">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              autoFocus
+                              value={newRegionInput}
+                              onChange={(e) => setNewRegionInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (newRegionInput.trim()) {
+                                    handleAddCustomRegion(newRegionInput);
+                                  }
+                                } else if (e.key === 'Escape') {
+                                  setIsAddingNewRegion(false);
+                                  setNewRegionInput('');
+                                }
+                              }}
+                              placeholder="e.g. Manali Base (Himachal)"
+                              className="flex-1 px-3 py-1.5 rounded-lg border-2 border-[#E5383B] text-xs sm:text-sm focus:outline-none bg-white font-semibold"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!newRegionInput.trim()) {
+                                  alert('Please enter a region name (e.g. Manali Base (Himachal))');
+                                  return;
+                                }
+                                handleAddCustomRegion(newRegionInput);
+                              }}
+                              className="px-3 py-2 rounded-lg bg-[#E5383B] hover:bg-[#C92A2A] text-white text-xs font-bold transition shadow-xs cursor-pointer shrink-0 inline-flex items-center gap-1"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Add</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAddingNewRegion(false);
+                                setNewRegionInput('');
+                              }}
+                              className="p-2 rounded-lg border border-neutral-200 text-neutral-500 hover:text-black hover:bg-neutral-100 text-xs font-bold transition cursor-pointer shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-neutral-500 leading-tight">
+                            Type name &amp; press Enter. It will be added to the dropdown permanently!
+                          </p>
+                          {customRegions && customRegions.length > 0 && (
+                            <div className="pt-1.5 border-t border-neutral-200/70 flex flex-wrap items-center gap-1 text-[10px]">
+                              <span className="text-neutral-400">Custom added:</span>
+                              {customRegions.map(cr => (
+                                <span
+                                  key={cr.id}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white border border-neutral-200 text-neutral-700 font-medium"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(p => ({ ...p, region: cr.id }));
+                                      setIsAddingNewRegion(false);
+                                    }}
+                                    className="hover:text-[#E5383B] cursor-pointer"
+                                  >
+                                    {cr.shortLabel || cr.label}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleRemoveCustomRegion(cr.id, e)}
+                                    className="text-neutral-400 hover:text-red-600 cursor-pointer ml-0.5"
+                                    title="Delete from custom list"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>

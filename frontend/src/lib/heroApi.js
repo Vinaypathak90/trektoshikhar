@@ -1,3 +1,5 @@
+import { fetchWithAuth } from './authApi';
+
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CACHE_KEY_HERO = 'tts_cached_hero_slides_v2';
@@ -54,9 +56,8 @@ export async function getHeroSlides(admin = false) {
  * @param {object} slideData
  */
 export async function createHeroSlide(slideData) {
-  const res = await fetch(`${API_URL}/hero-slides`, {
+  const res = await fetchWithAuth(`${API_URL}/hero-slides`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(slideData)
   });
   const json = await res.json();
@@ -70,9 +71,8 @@ export async function createHeroSlide(slideData) {
  * @param {object} slideData
  */
 export async function updateHeroSlide(id, slideData) {
-  const res = await fetch(`${API_URL}/hero-slides/${id}`, {
+  const res = await fetchWithAuth(`${API_URL}/hero-slides/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(slideData)
   });
   const json = await res.json();
@@ -85,7 +85,7 @@ export async function updateHeroSlide(id, slideData) {
  * @param {string} id
  */
 export async function deleteHeroSlide(id) {
-  const res = await fetch(`${API_URL}/hero-slides/${id}`, {
+  const res = await fetchWithAuth(`${API_URL}/hero-slides/${id}`, {
     method: 'DELETE'
   });
   const json = await res.json();
@@ -98,9 +98,8 @@ export async function deleteHeroSlide(id) {
  * @param {string[]} orderedIds
  */
 export async function reorderHeroSlides(orderedIds) {
-  const res = await fetch(`${API_URL}/hero-slides/reorder`, {
+  const res = await fetchWithAuth(`${API_URL}/hero-slides/reorder`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderedIds })
   });
   const json = await res.json();

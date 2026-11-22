@@ -1,3 +1,5 @@
+import { fetchWithAuth } from './authApi';
+
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CACHE_KEY_WHY_CHOOSE = 'tts_cached_why_choose_v1';
@@ -127,9 +129,8 @@ export async function getWhyChooseData(options = {}) {
  * Update global Why Choose section from Admin Dashboard
  */
 export async function updateWhyChooseData(payload) {
-  const res = await fetch(`${API_URL}/why-choose`, {
+  const res = await fetchWithAuth(`${API_URL}/why-choose`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
   const json = await res.json();
@@ -148,7 +149,7 @@ export async function updateWhyChooseData(payload) {
  * Reset Why Choose section to TrekToShikhar defaults
  */
 export async function resetWhyChooseData() {
-  const res = await fetch(`${API_URL}/why-choose/reset`, {
+  const res = await fetchWithAuth(`${API_URL}/why-choose/reset`, {
     method: 'POST'
   });
   const json = await res.json();

@@ -1,4 +1,5 @@
 import { BLOG_HERO_SLIDES, BLOG_POSTS, BLOG_CATEGORIES } from '../data/blogsData';
+import { fetchWithAuth } from './authApi';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -87,7 +88,7 @@ export async function getBlogData(options = {}) {
 // ----------------------------------------------------------------------
 export async function getAdminBlogData() {
   try {
-    const res = await fetch(`${API_URL}/blogs/admin/all`);
+    const res = await fetchWithAuth(`${API_URL}/blogs/admin/all`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const json = await res.json();
     return {
@@ -127,9 +128,8 @@ export async function getBlogPostBySlug(slug) {
 // 4. CREATE BLOG POST
 // ----------------------------------------------------------------------
 export async function createBlogPost(postData) {
-  const res = await fetch(`${API_URL}/blogs`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(postData)
   });
   if (!res.ok) {
@@ -151,9 +151,8 @@ export async function createBlogPost(postData) {
 // 5. UPDATE BLOG POST
 // ----------------------------------------------------------------------
 export async function updateBlogPost(id, postData) {
-  const res = await fetch(`${API_URL}/blogs/${id}`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(postData)
   });
   if (!res.ok) {
@@ -174,7 +173,7 @@ export async function updateBlogPost(id, postData) {
 // 6. DELETE BLOG POST
 // ----------------------------------------------------------------------
 export async function deleteBlogPost(id) {
-  const res = await fetch(`${API_URL}/blogs/${id}`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs/${id}`, {
     method: 'DELETE'
   });
   if (!res.ok) {
@@ -195,9 +194,8 @@ export async function deleteBlogPost(id) {
 // 7. TOGGLE BLOG STATUS (Published vs Draft)
 // ----------------------------------------------------------------------
 export async function toggleBlogStatus(id, is_published) {
-  const res = await fetch(`${API_URL}/blogs/${id}/status`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs/${id}/status`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ is_published })
   });
   if (!res.ok) throw new Error('Failed to toggle publication status');
@@ -218,9 +216,8 @@ export async function toggleBlogStatus(id, is_published) {
 // 8. TOGGLE FEATURED
 // ----------------------------------------------------------------------
 export async function toggleBlogFeatured(id, { featured, featured_on_home }) {
-  const res = await fetch(`${API_URL}/blogs/${id}/featured`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs/${id}/featured`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ featured, featured_on_home })
   });
   if (!res.ok) throw new Error('Failed to toggle featured status');
@@ -254,9 +251,8 @@ export async function toggleBlogFeatured(id, { featured, featured_on_home }) {
 // 9. UPDATE BLOG HERO SETTINGS
 // ----------------------------------------------------------------------
 export async function updateBlogSettings(settingsPayload) {
-  const res = await fetch(`${API_URL}/blogs/settings`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs/settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settingsPayload)
   });
   if (!res.ok) {
@@ -276,7 +272,7 @@ export async function updateBlogSettings(settingsPayload) {
 // 10. RESET BLOGS
 // ----------------------------------------------------------------------
 export async function resetBlogsToDefault() {
-  const res = await fetch(`${API_URL}/blogs/reset`, {
+  const res = await fetchWithAuth(`${API_URL}/blogs/reset`, {
     method: 'POST'
   });
   if (!res.ok) throw new Error('Failed to reset blogs');

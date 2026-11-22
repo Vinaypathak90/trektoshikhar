@@ -122,7 +122,7 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
           <div className="hidden md:flex items-center gap-2 text-xs text-neutral-500 font-medium truncate max-w-md">
             <span>Home</span>
             <span>/</span>
-            <span>{trek.region === 'shimla' ? 'Shimla Base' : 'Dehradun Base'}</span>
+            <span>{trek.region === 'shimla' ? 'Shimla Base' : trek.region === 'dehradun' ? 'Dehradun Base' : `${(trek.region || 'Mountain').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}${String(trek.region || '').toLowerCase().includes('base') ? '' : ' Base'}`}</span>
             <span>/</span>
             <span className="font-bold text-[#0A0A0A] truncate">{trek.title}</span>
           </div>

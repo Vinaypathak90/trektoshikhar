@@ -1,0 +1,161 @@
+{
+  "settings": {
+    "id": "global",
+    "phone": "+91 87912 18377",
+    "display_phone": "+91 87912 18377",
+    "whatsapp": "918791218377",
+    "email": "trektoshikhar@gmail.com",
+    "hours": "7:00 AM – 10:00 PM IST (Mon – Sun)",
+    "emergency_line": "24/7 Active Trail Dispatch & Rescue Helpline",
+    "response_time": "Within 15 minutes",
+    "updated_at": "2026-11-22T05:43:30.443Z"
+  },
+  "offices": [
+    {
+      "id": "office-dehradun-hq",
+      "name": "Dehradun Main HQ & Garhwal Base",
+      "city": "Dehradun",
+      "badge": "Main Headquarters • Uttarakhand",
+      "address": "Rajpur Road, Near Clock Tower, Dehradun, Uttarakhand 248001",
+      "landmark": "Near Clock Tower & Gandhi Park",
+      "phone": "+91 87912 18377",
+      "email": "bookings@trektoshikhar.com",
+      "hours": "7:00 AM – 9:00 PM IST",
+      "description": "Primary administrative headquarters and operational staging center for Garhwal expeditions: Nag Tibba, Kedarkantha, Har Ki Dun, and Kuari Pass.",
+      "map_embed_url": "https://maps.google.com/maps?q=Rajpur+Road+Dehradun+Clock+Tower&t=&z=14&ie=UTF8&iwloc=&output=embed",
+      "map_query": "Rajpur Road, Clock Tower, Dehradun",
+      "is_main_hq": true,
+      "is_active": true,
+      "display_order": 1,
+      "created_at": "2026-11-22T05:30:03.970Z",
+      "updated_at": "2026-11-22T05:30:03.970Z"
+    },
+    {
+      "id": "office-haldwani-foothills",
+      "name": "Haldwani Foothills Hub & Kumaon Gateway",
+      "city": "Haldwani",
+      "badge": "Kumaon Regional Hub • Uttarakhand",
+      "address": "Nainital Road, Near Tikonia Chauraha, Haldwani, Uttarakhand 263139",
+      "landmark": "Near Tikonia Chauraha & Kathgodam Rail Link",
+      "phone": "+91 87912 18377",
+      "email": "haldwani@trektoshikhar.com",
+      "hours": "8:00 AM – 8:00 PM IST",
+      "description": "Regional logistics hub and equipment staging center for Kumaon gateway expeditions, Pindari glacier routes, and east Himalayan trail coordination.",
+      "map_embed_url": "https://maps.google.com/maps?q=Tikonia+Chauraha+Nainital+Road+Haldwani&t=&z=14&ie=UTF8&iwloc=&output=embed",
+      "map_query": "Nainital Road, Haldwani",
+      "is_main_hq": false,
+      "is_active": true,
+      "display_order": 2,
+      "created_at": "2026-11-22T05:30:03.970Z",
+      "updated_at": "2026-11-22T05:30:03.970Z"
+    }
+  ],
+  "inquiries": [
+    {
+      "id": "inq-mwrfhx1e-pafz",
+      "full_name": "Test User",
+      "phone": "9876543210",
+      "email": "",
+      "trek_interest": "Nag Tibba Weekend Trek",
+      "trekker_count": "2",
+      "travel_month": "Upcoming Weekend",
+      "message": "Testing WhatsApp link",
+      "status": "new",
+      "created_at": "2026-11-22T06:01:01.826Z"
+    },
+    {
+      "id": "inq-mwrephcl-2pys",
+      "full_name": "Aman Rawat",
+      "phone": "9876543210",
+      "email": "aman@test.com",
+      "trek_interest": "Nag Tibba Weekend Trek",
+      "trekker_count": "3",
+      "travel_month": "Upcoming Weekend",
+      "message": "Need pickup from Haldwani/Kathgodam",
+      "status": "new",
+      "created_at": "2026-11-22T05:38:55.125Z"
+    },
+    {
+      "id": "inq-mwreny0j-0zcl",
+      "full_name": "Aman Rawat",
+      "phone": "9876543210",
+      "email": "aman@test.com",
+      "trek_interest": "Nag Tibba Weekend Trek",
+      "trekker_count": "3",
+      "travel_month": "Upcoming Weekend",
+      "message": "Need pickup from Haldwani/Kathgodam",
+      "status": "new",
+      "created_at": "2026-11-22T05:37:43.411Z"
+    },
+    {
+      "id": "inq-mwremshh-48tf",
+      "full_name": "Aman Rawat",
+      "phone": "9876543210",
+      "email": "aman@test.com",
+      "trek_interest": "Nag Tibba Weekend Trek",
+      "trekker_count": "3",
+      "travel_month": "Upcoming Weekend",
+      "message": "Need pickup from Haldwani/Kathgodam",
+      "status": "new",
+      "created_at": "2026-11-22T05:36:49.589Z"
+    },
+    {
+      "id": "inq-sample-1",
+      "full_name": "Rohit Sharma",
+      "phone": "9820145678",
+      "email": "rohit.sharma@example.com",
+      "trek_interest": "Kedarkantha Summit Expedition",
+      "trekker_count": "4",
+      "travel_month": "Upcoming Weekend",
+      "message": "Looking for winter batch with snow gear rental support.",
+      "status": "new",
+      "created_at": "2026-11-22T03:30:03.970Z"
+    },
+    {
+      "id": "inq-sample-2",
+      "full_name": "Priya Joshi",
+      "phone": "9711234560",
+      "email": "priya.j@example.com",
+      "trek_interest": "Nag Tibba Weekend Trek",
+      "trekker_count": "2",
+      "travel_month": "Next 15 Days",
+      "message": "Pickup needed from Dehradun Railway Station on Saturday morning.",
+      "status": "contacted",
+      "created_at": "2026-11-21T05:30:03.970Z"
+    }
+  ],
+  "faqs": [
+    {
+      "id": "faq-1",
+      "category": "beginners",
+      "question": "Are Himalayan weekend treks safe for absolute beginners with zero prior trekking experience?",
+      "answer": "Yes, absolutely! Introductory treks like Nag Tibba (9,915 ft) and Hatu Peak (11,150 ft) are paced scientifically with gradual slopes and frequent hydration breaks. Certified leaders from NIM (National Institute of Mountaineering) guide every step with a relaxed pace, making them 100% beginner and family friendly.",
+      "display_order": 1,
+      "is_active": true
+    },
+    {
+      "id": "faq-2",
+      "category": "safety",
+      "question": "What emergency medical protocols and oxygen backups are available on the trail?",
+      "answer": "Every single expedition batch is equipped with a high-altitude emergency oxygen cylinder, portable pulse oximeter for daily acclimatization checks, and a comprehensive wilderness medical kit. All trek leaders are certified Wilderness First Responders (WFR).",
+      "display_order": 2,
+      "is_active": true
+    },
+    {
+      "id": "faq-3",
+      "category": "booking",
+      "question": "How do I reach your mountain coordination desk directly for urgent booking?",
+      "answer": "You can instantly connect with our lead coordinators via WhatsApp or direct phone call at +91 87912 18377. Our operations desk is active 7 days a week from 7:00 AM to 10:00 PM IST.",
+      "display_order": 3,
+      "is_active": true
+    },
+    {
+      "id": "faq-4",
+      "category": "safety",
+      "question": "Why do you strictly limit batch sizes to 12–15 trekkers per expedition?",
+      "answer": "We reject commercial crowd-herding. A capped batch size of 12–15 trekkers ensures a 1:6 guide-to-trekker safety ratio, personalized health monitoring, and zero trail littering.",
+      "display_order": 4,
+      "is_active": true
+    }
+  ]
+}

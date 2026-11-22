@@ -1,4 +1,5 @@
 import express from 'express';
+import { requireAdminAuth } from '../middleware/authMiddleware.js';
 import {
   getAllTreks,
   getTrekBySlug,
@@ -12,9 +13,9 @@ const router = express.Router();
 
 router.get('/', getAllTreks);
 router.get('/:slug', getTrekBySlug);
-router.post('/', createTrek);
-router.put('/reorder', reorderTreks);
-router.put('/:id', updateTrek);
-router.delete('/:id', deleteTrek);
+router.post('/', requireAdminAuth, createTrek);
+router.put('/reorder', requireAdminAuth, reorderTreks);
+router.put('/:id', requireAdminAuth, updateTrek);
+router.delete('/:id', requireAdminAuth, deleteTrek);
 
 export default router;

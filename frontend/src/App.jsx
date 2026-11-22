@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -156,9 +156,27 @@ function HomePage({ onSelectTrek, onBookTrek }) {
   const homeFeaturedBlogs = activeBlogsList.filter((b) => b.featuredOnHome || b.featured_on_home);
   const homeBlogs = (homeFeaturedBlogs.length > 0 ? homeFeaturedBlogs : activeBlogsList).slice(0, 3);
 
+  // Dynamic region tabs for homepage based on live catalog
+  const dynamicHomeTabs = useMemo(() => {
+    const distinct = Array.from(new Set(liveTreks.map(t => (t.region || '').toLowerCase()).filter(Boolean)));
+    const tabs = [{ id: 'all', label: 'All Treks' }];
+    if (distinct.includes('dehradun')) tabs.push({ id: 'dehradun', label: 'Dehradun Base' });
+    if (distinct.includes('shimla')) tabs.push({ id: 'shimla', label: 'Shimla Base' });
+    distinct.forEach(reg => {
+      if (reg !== 'dehradun' && reg !== 'shimla') {
+        const clean = reg.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        tabs.push({
+          id: reg,
+          label: clean.toLowerCase().includes('base') ? clean : `${clean} Base`
+        });
+      }
+    });
+    return tabs;
+  }, [liveTreks]);
+
   const filteredTreks = selectedRegion === 'all' 
     ? liveTreks 
-    : liveTreks.filter(t => t.region === selectedRegion);
+    : liveTreks.filter(t => (t.region || '').toLowerCase() === selectedRegion.toLowerCase());
 
   // Maximum 9 treks on Homepage loaded progressively in batches of 3
   const maxHomeTreks = Math.min(9, filteredTreks.length);
@@ -236,37 +254,20 @@ function HomePage({ onSelectTrek, onBookTrek }) {
           {/* Top Right Controls: Region Filter Tabs + Direct All Treks Link */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Region Tabs */}
-            <div className="inline-flex p-1 bg-neutral-100 rounded-2xl border border-neutral-200/80 text-xs font-bold self-start md:self-auto shadow-2xs">
-              <button
-                onClick={() => setSelectedRegion('all')}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-                  selectedRegion === 'all' 
-                    ? 'bg-white text-[#0A0A0A] shadow-xs' 
-                    : 'text-neutral-500 hover:text-black'
-                }`}
-              >
-                All Treks
-              </button>
-              <button
-                onClick={() => setSelectedRegion('dehradun')}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-                  selectedRegion === 'dehradun' 
-                    ? 'bg-white text-[#E5383B] shadow-xs' 
-                    : 'text-neutral-500 hover:text-black'
-                }`}
-              >
-                Dehradun Base
-              </button>
-              <button
-                onClick={() => setSelectedRegion('shimla')}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-                  selectedRegion === 'shimla' 
-                    ? 'bg-white text-[#E5383B] shadow-xs' 
-                    : 'text-neutral-500 hover:text-black'
-                }`}
-              >
-                Shimla Base
-              </button>
+            <div className="inline-flex p-1 bg-neutral-100 rounded-2xl border border-neutral-200/80 text-xs font-bold self-start md:self-auto shadow-2xs overflow-x-auto max-w-full scrollbar-none">
+              {dynamicHomeTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedRegion(tab.id)}
+                  className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                    selectedRegion === tab.id 
+                      ? 'bg-white text-[#E5383B] shadow-xs font-black' 
+                      : 'text-neutral-500 hover:text-black'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
             {/* Direct Header Link to Full Catalog */}
@@ -629,7 +630,10 @@ function HomePage({ onSelectTrek, onBookTrek }) {
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isAdmin = location.pathname.startsWith('/admin');
+  const SECRET_PATH = (import.meta.env.VITE_ADMIN_SECRET_PATH || '/shikhar-vault-772').toLowerCase();
+  const isAdmin = location.pathname.startsWith('/admin') || 
+                  location.pathname.toLowerCase().startsWith(SECRET_PATH) ||
+                  location.pathname.toLowerCase().startsWith('/shikhar-vault');
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingTrek, setBookingTrek] = useState(null);
@@ -825,6 +829,12 @@ export default function App() {
         {/* Dedicated Admin Dashboard Portal */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/*" element={<AdminDashboard />} />
+        
+        {/* Secret Founder Vault Gateways (Hidden from public) */}
+        <Route path="/shikhar-vault-772" element={<AdminDashboard />} />
+        <Route path="/shikhar-vault-772/*" element={<AdminDashboard />} />
+        <Route path="/shikhar-vault" element={<AdminDashboard />} />
+        <Route path="/shikhar-vault/*" element={<AdminDashboard />} />
 
         {/* Catch-all Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,3 +1,5 @@
+import { fetchWithAuth } from './authApi';
+
 const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Stale-While-Revalidate LocalStorage Keys
@@ -153,9 +155,8 @@ export async function getTrekBySlug(slug) {
  * @param {object} trekData
  */
 export async function createTrek(trekData) {
-  const res = await fetch(`${API_URL}/treks`, {
+  const res = await fetchWithAuth(`${API_URL}/treks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(trekData)
   });
   const json = await res.json();
@@ -169,9 +170,8 @@ export async function createTrek(trekData) {
  * @param {object} trekData
  */
 export async function updateTrek(id, trekData) {
-  const res = await fetch(`${API_URL}/treks/${id}`, {
+  const res = await fetchWithAuth(`${API_URL}/treks/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(trekData)
   });
   const json = await res.json();
@@ -184,7 +184,7 @@ export async function updateTrek(id, trekData) {
  * @param {string} id
  */
 export async function deleteTrek(id) {
-  const res = await fetch(`${API_URL}/treks/${id}`, {
+  const res = await fetchWithAuth(`${API_URL}/treks/${id}`, {
     method: 'DELETE'
   });
   const json = await res.json();
@@ -197,9 +197,8 @@ export async function deleteTrek(id) {
  * @param {string[]} orderedIds
  */
 export async function reorderTreks(orderedIds) {
-  const res = await fetch(`${API_URL}/treks/reorder`, {
+  const res = await fetchWithAuth(`${API_URL}/treks/reorder`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderedIds })
   });
   const json = await res.json();

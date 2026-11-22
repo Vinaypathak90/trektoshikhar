@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import AdminLoginPage from './AdminLoginPage';
+import NotFoundPage from '../components/NotFoundPage';
 import { checkAdminSession, logoutAdmin } from '../lib/authApi';
 import { ShieldCheck } from 'lucide-react';
 
+const SECRET_PATH = (import.meta.env.VITE_ADMIN_SECRET_PATH || '/shikhar-vault-772').toLowerCase();
+
 export default function AdminDashboard() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [admin, setAdmin] = useState(null);
   const [isVerifying, setIsVerifying] = useState(true);
+
+  // Check whether the visitor arrived via the Secret URL or has an access key
+  const currentPath = location.pathname.toLowerCase();
+  const searchParams = new URLSearchParams(location.search);
+  const hasAccessKey = searchParams.get('vault') === '772' || searchParams.get('access') === 'founder';
+  const isSecretRoute = currentPath.startsWith(SECRET_PATH) || currentPath.startsWith('/shikhar-vault') || hasAccessKey;
 
   // Check existing session on load
   useEffect(() => {
@@ -45,12 +58,13 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     await logoutAdmin();
     setAdmin(null);
+    navigate('/');
   };
 
-  // Sleek security verification splash
+  // 1. Sleek verification splash
   if (isVerifying) {
     return (
-      <div className="min-h-screen bg-[#070708] text-white flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#070708] text-white flex flex-col items-center justify-center p-4 select-none">
         <div className="w-14 h-14 rounded-2xl bg-[#E5383B]/20 border border-[#E5383B]/40 flex items-center justify-center mb-4 shadow-xl shadow-[#E5383B]/10">
           <ShieldCheck className="w-7 h-7 text-[#FFD700] animate-pulse" />
         </div>
@@ -65,11 +79,23 @@ export default function AdminDashboard() {
     );
   }
 
-  // If not authenticated -> Show Secret Login Portal
+  // 2. If NOT authenticated:
   if (!admin) {
+    // If the visitor hit public /admin directly without knowing the secret route:
+    // HIDE IT COMPLETELY! Show 404 Not Found so bots/strangers find nothing!
+    if (!isSecretRoute) {
+      return (
+        <NotFoundPage 
+          title="Trail Coordinates Not Found" 
+          message="No sanctuary route, public itinerary, or administrative trail exists at this path." 
+        />
+      );
+    }
+
+    // Visitor arrived via the secret route (e.g. /shikhar-vault-772) -> Show Founder Security Gate
     return <AdminLoginPage onLoginSuccess={(user) => setAdmin(user)} />;
   }
 
-  // Authenticated Founder -> Render Admin CRM
+  // 3. Authenticated Founder (Vinay / Kunal) -> Render Admin CRM
   return <AdminLayout admin={admin} onLogout={handleLogout} />;
 }
