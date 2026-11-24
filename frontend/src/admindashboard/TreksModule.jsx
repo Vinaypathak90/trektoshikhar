@@ -736,7 +736,7 @@ export default function TreksModule() {
           onClick={() => setIsModalOpen(false)}
         >
           <div 
-            className="relative bg-white rounded-3xl w-full max-w-4xl h-[86vh] max-h-[640px] shadow-2xl border border-neutral-200/90 flex flex-col overflow-hidden animate-editorial-fade"
+            className="relative bg-white rounded-3xl w-full max-w-4xl h-[88vh] max-h-[760px] shadow-2xl border border-neutral-200/90 flex flex-col overflow-hidden animate-editorial-fade"
             onClick={(e) => e.stopPropagation()}
           >
             
@@ -1333,82 +1333,224 @@ export default function TreksModule() {
               {/* TAB 5: PACKAGES & PRICING */}
               {activeTabInModal === 'packages' && (
                 <div className="space-y-4 animate-editorial-fade">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-neutral-700">Expedition Packages &amp; Batch Options</span>
-                      <p className="text-[11px] text-neutral-400">Multi-tier pricing with included items</p>
+                  
+                  {/* Top Bar Banner */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-neutral-200/90 shadow-2xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E5383B] to-[#990000] text-white flex items-center justify-center shadow-xs shrink-0">
+                        <Package className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black uppercase tracking-wider text-neutral-800">
+                            Expedition Packages &amp; Pricing Tiers
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-neutral-100 text-neutral-700 border border-neutral-200">
+                            {formData.packages.length} {formData.packages.length === 1 ? 'Tier' : 'Tiers'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500 font-medium mt-0.5">
+                          Multi-tier pricing, inclusions, and custom batch badges for this trek.
+                        </p>
+                      </div>
                     </div>
+
                     <button
                       type="button"
                       onClick={handleAddPackage}
-                      className="px-3.5 py-1.5 rounded-xl bg-neutral-900 text-white text-xs font-bold hover:bg-[#E5383B] transition cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-[#E5383B] text-white text-xs font-extrabold transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-4 h-4" />
                       <span>Add Package Tier</span>
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    {formData.packages.map((pkg, idx) => (
-                      <div key={idx} className="p-4 rounded-2xl bg-white border border-neutral-200 space-y-3 shadow-2xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-[#E5383B]">Package #{idx + 1}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemovePackage(idx)}
-                            className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
-                          >
-                            Remove Package
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <input
-                            type="text"
-                            value={pkg.name}
-                            onChange={(e) => handlePackageChange(idx, 'name', e.target.value)}
-                            placeholder="Package Name"
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs font-bold"
-                          />
-                          <input
-                            type="number"
-                            value={pkg.price}
-                            onChange={(e) => handlePackageChange(idx, 'price', Number(e.target.value))}
-                            placeholder="Price (₹)"
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs font-bold"
-                          />
-                          <input
-                            type="text"
-                            value={pkg.badge || ''}
-                            onChange={(e) => handlePackageChange(idx, 'badge', e.target.value)}
-                            placeholder="Badge (e.g. Most Popular)"
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs"
-                          />
-                        </div>
-
-                        <textarea
-                          rows={2}
-                          value={pkg.desc}
-                          onChange={(e) => handlePackageChange(idx, 'desc', e.target.value)}
-                          placeholder="Short description..."
-                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs resize-none"
-                        />
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-neutral-600 mb-1">
-                            Included Items (comma-separated):
-                          </label>
-                          <input
-                            type="text"
-                            value={Array.isArray(pkg.includes) ? pkg.includes.join(', ') : ''}
-                            onChange={(e) => handlePackageChange(idx, 'includes', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                            placeholder="All meals on trek, Dome tents, Guide, Forest permits"
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs"
-                          />
-                        </div>
+                  {/* Empty State */}
+                  {formData.packages.length === 0 ? (
+                    <div className="p-8 text-center rounded-2xl bg-white border-2 border-dashed border-neutral-200 space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center mx-auto">
+                        <Package className="w-6 h-6" />
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-sm font-bold text-neutral-700">No package tiers configured</p>
+                      <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                        Click &ldquo;Add Package Tier&rdquo; to add Base-to-Base, Transit Included, or Custom Group packages.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddPackage}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E5383B] text-white text-xs font-bold hover:bg-[#C92A2A] transition cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Create First Tier</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {formData.packages.map((pkg, idx) => (
+                        <div 
+                          key={idx} 
+                          className="rounded-2xl bg-white border border-neutral-200/90 shadow-2xs hover:shadow-sm transition-all overflow-hidden"
+                        >
+                          {/* Tier Card Header */}
+                          <div className="px-4 sm:px-5 py-3 bg-neutral-50/90 border-b border-neutral-200/80 flex flex-wrap items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-neutral-900 text-white shrink-0 shadow-2xs">
+                                Tier #{idx + 1}
+                              </span>
+                              <span className="font-outfit font-black text-sm text-neutral-900 truncate">
+                                {pkg.name || `Package Tier ${idx + 1}`}
+                              </span>
+                              {pkg.price ? (
+                                <span className="text-xs font-black text-[#E5383B] bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg shrink-0">
+                                  ₹{Number(pkg.price).toLocaleString('en-IN')}
+                                </span>
+                              ) : null}
+                              {pkg.badge && (
+                                <span className="hidden sm:inline-block text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full truncate shrink-0">
+                                  {pkg.badge}
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePackage(idx)}
+                              className="px-2.5 py-1.5 rounded-xl text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 hover:border-rose-600 text-xs font-bold transition-all duration-200 flex items-center gap-1 cursor-pointer shrink-0"
+                              title="Delete this package tier"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="text-[11px]">Remove</span>
+                            </button>
+                          </div>
+
+                          {/* Tier Card Fields Body */}
+                          <div className="p-4 sm:p-5 space-y-4">
+                            
+                            {/* Inputs Grid: Name, Price, Badge */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                              <div>
+                                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-neutral-600 mb-1">
+                                  Package Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={pkg.name}
+                                  onChange={(e) => handlePackageChange(idx, 'name', e.target.value)}
+                                  placeholder="e.g. Base to Base Package"
+                                  className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 bg-white text-xs font-bold text-neutral-900 focus:outline-none focus:border-[#E5383B] focus:ring-1 focus:ring-[#E5383B] transition"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-neutral-600 mb-1">
+                                  Price / Person (₹) *
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-black text-neutral-400">
+                                    ₹
+                                  </span>
+                                  <input
+                                    type="number"
+                                    value={pkg.price}
+                                    onChange={(e) => handlePackageChange(idx, 'price', Number(e.target.value))}
+                                    placeholder="8999"
+                                    className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-neutral-200 bg-white text-xs font-extrabold text-[#E5383B] focus:outline-none focus:border-[#E5383B] focus:ring-1 focus:ring-[#E5383B] transition"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-neutral-600 mb-1">
+                                  Badge / Tag (Optional)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={pkg.badge || ''}
+                                  onChange={(e) => handlePackageChange(idx, 'badge', e.target.value)}
+                                  placeholder="e.g. Minimum 3 members, Best Value"
+                                  className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 bg-white text-xs font-medium text-neutral-800 focus:outline-none focus:border-[#E5383B] focus:ring-1 focus:ring-[#E5383B] transition"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Description & Perks */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-neutral-600">
+                                  Package Description &amp; Highlights
+                                </label>
+                                <span className="text-[10px] text-neutral-400 font-medium">
+                                  Supports multiline text (Photographs, Reels, Certificates, etc.)
+                                </span>
+                              </div>
+                              <textarea
+                                rows={3}
+                                value={pkg.desc}
+                                onChange={(e) => handlePackageChange(idx, 'desc', e.target.value)}
+                                placeholder="Describe photography perks, transit reporting, mountain certificates, or special batch details..."
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-white text-xs text-neutral-800 leading-relaxed focus:outline-none focus:border-[#E5383B] focus:ring-1 focus:ring-[#E5383B] transition resize-y min-h-[72px]"
+                              />
+                            </div>
+
+                            {/* Included In This Package */}
+                            <div className="p-3.5 rounded-xl bg-neutral-50/70 border border-neutral-200 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <span>Included In This Package ({Array.isArray(pkg.includes) ? pkg.includes.length : 0} Items)</span>
+                                </label>
+                                <span className="text-[10px] text-neutral-400">
+                                  Displays with green checkmarks on trek page
+                                </span>
+                              </div>
+
+                              {/* Visual Chips */}
+                              {Array.isArray(pkg.includes) && pkg.includes.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                  {pkg.includes.map((item, incIdx) => (
+                                    <span 
+                                      key={incIdx}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-emerald-950 border border-emerald-200/90 shadow-2xs"
+                                    >
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                      <span>{item}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newIncludes = pkg.includes.filter((_, i) => i !== incIdx);
+                                          handlePackageChange(idx, 'includes', newIncludes);
+                                        }}
+                                        className="text-neutral-400 hover:text-rose-600 transition-colors ml-1 cursor-pointer"
+                                        title="Remove item"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Input for comma-separated items */}
+                              <div>
+                                <input
+                                  type="text"
+                                  value={Array.isArray(pkg.includes) ? pkg.includes.join(', ') : ''}
+                                  onChange={(e) => handlePackageChange(idx, 'includes', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                                  placeholder="e.g. All meals on trek, Dome tents, Guide, Forest permits (comma-separated)"
+                                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-neutral-200 text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-[#E5383B] focus:ring-1 focus:ring-[#E5383B] transition"
+                                />
+                                <p className="text-[10px] text-neutral-400 mt-1">
+                                  Tip: Separate items with commas to automatically create individual bullet points.
+                                </p>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                 </div>
               )}
 
