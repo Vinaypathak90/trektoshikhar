@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Layers, 
@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Users,
   Camera,
-  BookOpen
+  BookOpen,
+  Pin,
+  PinOff
 } from 'lucide-react';
 import HeroSlidesModule from './HeroSlidesModule';
 import TreksModule from './TreksModule';
@@ -33,6 +35,44 @@ export default function AdminLayout({ admin, onLogout }) {
   // Default to Module 1: Header & Hero Slider in proper sequence
   const [activeTab, setActiveTab] = useState('hero');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Hover-to-expand collapsible sidebar state
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [isSidebarPinned, setIsSidebarPinned] = useState(() => {
+    try {
+      return localStorage.getItem('tts_admin_sidebar_pinned') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const sidebarHoverTimer = useRef(null);
+
+  const handleSidebarMouseEnter = () => {
+    if (sidebarHoverTimer.current) clearTimeout(sidebarHoverTimer.current);
+    setIsSidebarHovered(true);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (sidebarHoverTimer.current) clearTimeout(sidebarHoverTimer.current);
+    sidebarHoverTimer.current = setTimeout(() => {
+      setIsSidebarHovered(false);
+    }, 180);
+  };
+
+  const togglePinSidebar = (e) => {
+    if (e) e.stopPropagation();
+    setIsSidebarPinned(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('tts_admin_sidebar_pinned', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Expanded when hovered, pinned open, or open on mobile
+  const isExpanded = sidebarOpen || isSidebarPinned || isSidebarHovered;
 
   const adminName = admin?.name || 'TrekToShikhar Founder';
   const adminEmail = admin?.email || 'vinaypathak2772@gmail.com';
@@ -112,20 +152,25 @@ export default function AdminLayout({ admin, onLogout }) {
       )}
 
       {/* ====================================================================
-          2. LEFT SIDEBAR (ROCK SOLID FIXED - NEVER SCROLLS AWAY)
+          2. LEFT SIDEBAR (HOVER TO EXPAND COLLAPSIBLE + PIN SUPPORT)
          ==================================================================== */}
       <aside 
-        className={`fixed md:static inset-y-0 left-0 w-64 lg:w-72 h-screen bg-[#0F1115] text-white z-40 flex flex-col justify-between p-4 lg:p-5 border-r border-neutral-800 shadow-2xl transition-transform duration-300 ease-in-out shrink-0 overflow-hidden ${
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
+        className={`fixed md:static inset-y-0 left-0 h-screen bg-[#0F1115] text-white z-40 flex flex-col justify-between p-3 border-r border-neutral-800 shadow-2xl transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shrink-0 overflow-hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } ${
+          isExpanded ? 'w-64 lg:w-72' : 'w-[72px]'
         }`}
       >
         <div className="flex flex-col h-full overflow-hidden">
           
           {/* Brand Header (Sticky at top of sidebar) */}
-          <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
+          <div className="flex items-center justify-between pb-3.5 border-b border-white/10 shrink-0">
             <div 
               onClick={() => navigate('/')}
-              className="flex items-center gap-3 cursor-pointer group"
+              className="flex items-center cursor-pointer group min-w-0"
+              title="TrekToShikhar Home"
             >
               <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-[#E5383B]/50 group-hover:ring-[#E5383B] transition-all shrink-0">
                 <img 
@@ -134,7 +179,9 @@ export default function AdminLayout({ admin, onLogout }) {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
                 />
               </div>
-              <div>
+              <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isExpanded ? 'max-w-[170px] opacity-100 translate-x-0 ml-3' : 'max-w-0 opacity-0 -translate-x-2 pointer-events-none ml-0'
+              }`}>
                 <span className="font-outfit font-black text-base text-white tracking-tight block leading-tight">
                   TrekTo<span className="text-[#E5383B]">Shikhar</span>
                 </span>
@@ -144,19 +191,42 @@ export default function AdminLayout({ admin, onLogout }) {
               </div>
             </div>
 
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="md:hidden p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Desktop Pin Toggle & Mobile Close */}
+            <div className="flex items-center shrink-0">
+              <div className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isExpanded ? 'max-w-[36px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'
+              }`}>
+                <button
+                  type="button"
+                  onClick={togglePinSidebar}
+                  title={isSidebarPinned ? "Sidebar Pinned Open (Click to enable hover collapse)" : "Click to pin sidebar open"}
+                  className={`hidden md:flex p-1.5 rounded-lg transition cursor-pointer ${
+                    isSidebarPinned 
+                      ? 'text-[#FFD700] bg-white/15 hover:bg-white/25' 
+                      : 'text-neutral-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {isSidebarPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                </button>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="md:hidden p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Navigation Slider List (Independent Scroll if needed) */}
-          <div className="mt-5 space-y-1.5 flex-1 overflow-y-auto scrollbar-none pr-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 px-3 mb-2 block">
-              Core Control Modules
-            </span>
+          {/* Navigation Slider List */}
+          <div className="mt-4 space-y-1.5 flex-1 overflow-y-auto scrollbar-none pr-0.5">
+            <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isExpanded ? 'max-h-6 opacity-100 mb-2 px-2.5' : 'max-h-0 opacity-0 pointer-events-none mb-0'
+            }`}>
+              <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">
+                Core Control Modules
+              </span>
+            </div>
 
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -168,75 +238,100 @@ export default function AdminLayout({ admin, onLogout }) {
                     setActiveTab(item.id);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer text-left group ${
+                  title={!isExpanded ? `${item.label} (${item.badge})` : undefined}
+                  className={`w-full flex items-center p-2 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer text-left group ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#E5383B] to-[#C92A2A] text-white shadow-[0_4px_20px_rgba(229,56,59,0.4)] translate-x-1'
+                      ? 'bg-gradient-to-r from-[#E5383B] to-[#C92A2A] text-white shadow-[0_4px_20px_rgba(229,56,59,0.4)]'
                       : 'text-neutral-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`p-2 rounded-xl transition-colors ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-neutral-400 group-hover:text-white group-hover:bg-white/10'
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="truncate">
-                      <span className={`block truncate ${isActive ? 'font-extrabold text-white' : 'text-neutral-300'}`}>
-                        {item.label}
-                      </span>
-                      <span className={`text-[10px] block truncate ${isActive ? 'text-white/80' : 'text-neutral-500'}`}>
-                        {item.desc}
-                      </span>
-                    </div>
+                  {/* Fixed Icon Anchor - 0 Horizontal Shift */}
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-neutral-400 group-hover:text-white group-hover:bg-white/10'
+                  }`}>
+                    <Icon className="w-4 h-4 shrink-0" />
                   </div>
 
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ml-2 ${
-                    isActive ? 'bg-white/25 text-white' : 'bg-white/10 text-neutral-400'
+                  {/* Slide-out Text Label with Easing */}
+                  <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] min-w-0 flex-1 ${
+                    isExpanded ? 'max-w-[170px] opacity-100 translate-x-0 ml-3' : 'max-w-0 opacity-0 -translate-x-2 pointer-events-none ml-0'
                   }`}>
-                    {item.badge}
-                  </span>
+                    <span className={`block truncate ${isActive ? 'font-extrabold text-white' : 'text-neutral-200'}`}>
+                      {item.label}
+                    </span>
+                    <span className={`text-[10px] block truncate ${isActive ? 'text-white/80' : 'text-neutral-500'}`}>
+                      {item.desc}
+                    </span>
+                  </div>
+
+                  {/* Badge Indicator */}
+                  <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shrink-0 ${
+                    isExpanded ? 'max-w-[70px] opacity-100 scale-100 ml-2' : 'max-w-0 opacity-0 scale-75 pointer-events-none ml-0'
+                  }`}>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider block ${
+                      isActive ? 'bg-white/25 text-white' : 'bg-white/10 text-neutral-400'
+                    }`}>
+                      {item.badge}
+                    </span>
+                  </div>
                 </button>
               );
             })}
           </div>
 
           {/* Sidebar Footer: Back to Live Site & Admin Profile */}
-          <div className="pt-4 border-t border-white/10 space-y-2.5 shrink-0">
+          <div className="pt-3.5 border-t border-white/10 space-y-2 shrink-0">
             <button
               onClick={() => navigate('/')}
-              className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white hover:text-black text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+              title="Exit to Live Website"
+              className="w-full p-2 rounded-xl bg-white/5 hover:bg-white hover:text-black text-white text-xs font-bold transition-all duration-200 flex items-center cursor-pointer border border-white/10"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Exit to Live Website</span>
+              <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                <ArrowLeft className="w-4 h-4 shrink-0" />
+              </div>
+              <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isExpanded ? 'max-w-[170px] opacity-100 translate-x-0 ml-2' : 'max-w-0 opacity-0 -translate-x-2 pointer-events-none ml-0'
+              }`}>
+                <span>Exit to Live Website</span>
+              </div>
             </button>
 
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E5383B] to-[#990000] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm border border-white/20">
+            <div className="p-2 rounded-xl bg-white/5 border border-white/5 space-y-2">
+              <div className="flex items-center">
+                <div 
+                  title={`${adminName} (${adminEmail})`}
+                  className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E5383B] to-[#990000] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm border border-white/20"
+                >
                   {adminInitials}
                 </div>
-                <div className="text-left text-xs truncate flex-1 min-w-0">
-                  <span className="font-bold text-white block truncate">{adminName}</span>
+                <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] min-w-0 flex-1 ${
+                  isExpanded ? 'max-w-[170px] opacity-100 translate-x-0 ml-2.5' : 'max-w-0 opacity-0 -translate-x-2 pointer-events-none ml-0'
+                }`}>
+                  <span className="font-bold text-white block truncate text-xs">{adminName}</span>
                   <span className="text-[10px] text-neutral-400 block truncate">{adminEmail}</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px]">
-                <span className="text-emerald-400 flex items-center gap-1 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Whitelisted Founder
-                </span>
+              <div className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isExpanded ? 'max-h-8 opacity-100 pt-1 border-t border-white/5' : 'max-h-0 opacity-0 pointer-events-none'
+              }`}>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Whitelisted Founder
+                  </span>
 
-                {onLogout && (
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3 h-3" />
-                    <span>Sign Out</span>
-                  </button>
-                )}
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span>Sign Out</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

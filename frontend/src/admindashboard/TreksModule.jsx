@@ -767,7 +767,7 @@ export default function TreksModule() {
                 { id: 'itinerary', label: `3. Itinerary (${formData.itinerary.length} Days)` },
                 { id: 'why', label: `4. Why This Trek? (${formData.whyMustDo.length})` },
                 { id: 'packages', label: `5. Packages (${formData.packages.length})` },
-                { id: 'checklist', label: '6. Gear & Includes' }
+                { id: 'checklist', label: `6. Inclusions & Exclusions & Gear (${formData.inclusions.length + formData.exclusions.length + formData.gearList.length})` }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -1229,18 +1229,50 @@ export default function TreksModule() {
                             type="text"
                             value={dayItem.time}
                             onChange={(e) => handleItineraryChange(idx, 'time', e.target.value)}
-                            placeholder="Estimated Time"
+                            placeholder="Estimated Time (e.g. 4-5 hrs)"
                             className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 text-xs"
                           />
                         </div>
 
-                        <textarea
-                          rows={2}
-                          value={dayItem.highlights}
-                          onChange={(e) => handleItineraryChange(idx, 'highlights', e.target.value)}
-                          placeholder="Key trail highlights, waterfalls, forest walks..."
-                          className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 text-xs resize-none"
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">
+                              Night Stay / Accommodation
+                            </span>
+                            <input
+                              type="text"
+                              value={dayItem.stay || ''}
+                              onChange={(e) => handleItineraryChange(idx, 'stay', e.target.value)}
+                              placeholder="e.g. 4-Season Dome Tents / Homestay in Nainital"
+                              className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium focus:border-[#E5383B]"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">
+                              Meals Included
+                            </span>
+                            <input
+                              type="text"
+                              value={dayItem.meals || ''}
+                              onChange={(e) => handleItineraryChange(idx, 'meals', e.target.value)}
+                              placeholder="e.g. Breakfast, Packed Lunch & Hot Dinner"
+                              className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium focus:border-[#E5383B]"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">
+                            Key Trail Highlights
+                          </span>
+                          <textarea
+                            rows={2}
+                            value={dayItem.highlights}
+                            onChange={(e) => handleItineraryChange(idx, 'highlights', e.target.value)}
+                            placeholder="Key trail highlights, waterfalls, forest walks, temple arti..."
+                            className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 text-xs resize-none"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1395,7 +1427,7 @@ export default function TreksModule() {
                         onClick={() => handleAddStringItem('inclusions', 'New inclusion item')}
                         className="text-xs font-bold text-emerald-700 hover:text-emerald-950 cursor-pointer"
                       >
-                        + Add Item
+                        + Add Inclusion
                       </button>
                     </div>
 
@@ -1406,6 +1438,7 @@ export default function TreksModule() {
                             type="text"
                             value={item}
                             onChange={(e) => handleStringItemChange('inclusions', idx, e.target.value)}
+                            placeholder="e.g. Best Hotels and Homestays / Meals included"
                             className="flex-1 px-3 py-1.5 rounded-lg border border-neutral-200 text-xs"
                           />
                           <button
@@ -1417,6 +1450,50 @@ export default function TreksModule() {
                           </button>
                         </div>
                       ))}
+                      {formData.inclusions.length === 0 && (
+                        <p className="text-neutral-400 text-xs italic py-1">No inclusion points added yet. Click &quot;+ Add Inclusion&quot; above.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Exclusions */}
+                  <div className="p-4 rounded-2xl bg-white border border-neutral-200 space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-800">
+                        <XCircle className="w-4 h-4 text-red-500" />
+                        <span>What is Not Included ({formData.exclusions.length} Points)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddStringItem('exclusions', 'New exclusion item')}
+                        className="text-xs font-bold text-red-600 hover:text-red-800 cursor-pointer"
+                      >
+                        + Add Exclusion
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {formData.exclusions.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleStringItemChange('exclusions', idx, e.target.value)}
+                            placeholder="e.g. Transport from home city / Personal offloading"
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-neutral-200 text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveStringItem('exclusions', idx)}
+                            className="text-red-500 hover:text-red-700 text-xs cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {formData.exclusions.length === 0 && (
+                        <p className="text-neutral-400 text-xs italic py-1">No exclusion points added yet. Click &quot;+ Add Exclusion&quot; above.</p>
+                      )}
                     </div>
                   </div>
 

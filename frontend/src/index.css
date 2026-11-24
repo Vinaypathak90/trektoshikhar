@@ -182,20 +182,37 @@
   will-change: opacity, transform;
 }
 
-@keyframes itineraryDetailsSlide {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, -10px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+/* ========================================================
+   Silky Smooth Itinerary Accordion Transition
+   Zero-Jitter Grid Animation with Deceleration Curve
+   ======================================================== */
+.smooth-accordion-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 420ms cubic-bezier(0.16, 1, 0.3, 1), 
+              opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: grid-template-rows, opacity;
 }
 
-.animate-itinerary-details {
-  animation: itineraryDetailsSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, transform;
+.smooth-accordion-wrapper.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.smooth-accordion-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.smooth-accordion-content {
+  transform: translate3d(0, -6px, 0);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.smooth-accordion-wrapper.is-open .smooth-accordion-content {
+  transform: translate3d(0, 0, 0);
 }
 
 /* ========================================================

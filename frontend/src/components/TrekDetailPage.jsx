@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -34,6 +34,7 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
   const [trek, setTrek] = useState(fallbackTrek);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [expandedDay, setExpandedDay] = useState(0); // Day 1 open by default
+  const [lockedDay, setLockedDay] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Fetch live trek from API on mount or slug change
@@ -82,8 +83,34 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [trek.id, slug]);
 
+  // Silky smooth hover & click collapse with 160ms grace window (prevents gap flickering)
+  const hoverTimeoutRef = useRef(null);
+
   const toggleDay = (idx) => {
-    setExpandedDay(expandedDay === idx ? -1 : idx);
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    if (lockedDay === idx) {
+      setLockedDay(null);
+      setExpandedDay(-1);
+    } else {
+      setLockedDay(idx);
+      setExpandedDay(idx);
+    }
+  };
+
+  const handleDayMouseEnter = (idx) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    if (lockedDay === null) {
+      setExpandedDay(idx);
+    }
+  };
+
+  const handleDayMouseLeave = () => {
+    if (lockedDay === null) {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = setTimeout(() => {
+        setExpandedDay(-1);
+      }, 160);
+    }
   };
 
   const handleShare = () => {
@@ -331,19 +358,22 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
                 </p>
               </div>
 
-              {/* Day Timeline Cards */}
-              <div className="space-y-4">
+              {/* Day Timeline Cards (Hover to open, mouse leave to collapse, click to lock/toggle) */}
+              <div 
+                className="space-y-4"
+                onMouseLeave={handleDayMouseLeave}
+              >
                 {itinerary.map((dayItem, idx) => {
                   const isOpen = expandedDay === idx;
                   return (
                     <div
                       key={idx}
-                      onMouseEnter={() => setExpandedDay(idx)}
+                      onMouseEnter={() => handleDayMouseEnter(idx)}
                       onClick={() => toggleDay(idx)}
-                      className={`rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 transform-gpu ${
+                      className={`rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 transform-gpu border-2 ${
                         isOpen 
-                          ? 'border-2 border-[#E5383B] bg-white shadow-[0_20px_45px_-10px_rgba(229,56,59,0.22)] -translate-y-1' 
-                          : 'border border-neutral-200/90 bg-white shadow-xs hover:border-[#E5383B]/60 hover:shadow-xl hover:-translate-y-1'
+                          ? 'border-[#E5383B] bg-white shadow-[0_20px_45px_-10px_rgba(229,56,59,0.22)] -translate-y-1' 
+                          : 'border-neutral-200/80 bg-white shadow-xs hover:border-[#E5383B]/60 hover:shadow-xl hover:-translate-y-1'
                       }`}
                     >
                       {/* Header Bar */}
@@ -382,21 +412,21 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
                           </div>
                         </div>
 
-                        <div className={`p-2 rounded-full transition-all duration-300 shrink-0 ${
-                          isOpen ? 'bg-[#E5383B] text-white rotate-180 shadow-xs' : 'bg-neutral-100 text-neutral-600'
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] shrink-0 ${
+                          isOpen ? 'bg-[#E5383B] text-white shadow-md shadow-[#E5383B]/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                         }`}>
-                          <ChevronDown className="w-4 h-4" />
+                          <ChevronDown className={`w-4 h-4 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                            isOpen ? 'rotate-180' : 'rotate-0'
+                          }`} />
                         </div>
                       </div>
 
-                      {/* Smooth Height Expansion via CSS Grid Rows */}
+                      {/* Silky Smooth Height Expansion via CSS Grid Rows */}
                       <div 
-                        className={`grid transition-all duration-400 ease-out ${
-                          isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                        }`}
+                        className={`smooth-accordion-wrapper ${isOpen ? 'is-open' : ''}`}
                       >
-                        <div className="overflow-hidden">
-                          <div className="px-5 sm:px-6 pb-6 pt-3 border-t border-neutral-100 bg-neutral-50/50 space-y-4 animate-itinerary-details">
+                        <div className="smooth-accordion-inner">
+                          <div className="smooth-accordion-content px-5 sm:px-6 pb-6 pt-3 border-t border-neutral-100 bg-neutral-50/50 space-y-4">
                             {dayItem.highlights && (
                               <div className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-2xs">
                                 <span className="text-xs font-black uppercase tracking-wider text-[#E5383B] block mb-1">
@@ -419,14 +449,14 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
                               {dayItem.stay && (
                                 <div className="p-3.5 rounded-xl bg-white border border-neutral-200 shadow-2xs">
                                   <span className="text-neutral-400 block font-bold">Night Stay</span>
-                                  <span className="font-bold text-neutral-800 mt-0.5 block truncate">{dayItem.stay}</span>
+                                  <span className="font-bold text-neutral-800 mt-0.5 block leading-snug break-words">{dayItem.stay}</span>
                                 </div>
                               )}
 
                               {dayItem.meals && (
                                 <div className="p-3.5 rounded-xl bg-white border border-neutral-200 shadow-2xs">
                                   <span className="text-neutral-400 block font-bold">Meals Included</span>
-                                  <span className="font-bold text-neutral-800 mt-0.5 block truncate">{dayItem.meals}</span>
+                                  <span className="font-bold text-neutral-800 mt-0.5 block leading-snug break-words">{dayItem.meals}</span>
                                 </div>
                               )}
                             </div>
@@ -590,12 +620,16 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
                   </h3>
                 </div>
                 <ul className="space-y-3.5 text-xs sm:text-sm text-emerald-900/90 font-medium">
-                  {inclusions.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
+                  {inclusions && inclusions.length > 0 ? (
+                    inclusions.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-neutral-400 italic text-xs">All standard expedition camping, meals, and safety gear included.</li>
+                  )}
                 </ul>
               </div>
 
@@ -608,12 +642,16 @@ export default function TrekDetailPage({ trek: propTrek, onBack, onBookTrek }) {
                   </h3>
                 </div>
                 <ul className="space-y-3.5 text-xs sm:text-sm text-neutral-600 font-medium">
-                  {exclusions.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <XCircle className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
+                  {exclusions && exclusions.length > 0 ? (
+                    exclusions.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <XCircle className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-neutral-400 italic text-xs">Personal clothing, travel to base, and offloading not included.</li>
+                  )}
                 </ul>
               </div>
             </div>
